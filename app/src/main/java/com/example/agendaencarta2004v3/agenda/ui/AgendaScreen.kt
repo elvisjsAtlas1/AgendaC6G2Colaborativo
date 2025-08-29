@@ -43,10 +43,15 @@ fun AgendaScreen(
     agendaViewModel: AgendaViewModel = viewModel(),
     bibliotecaViewModel: BibliotecaViewModel = viewModel()
 ) {
-    val cursosBiblioteca by bibliotecaViewModel.cursos.collectAsState()
-    val eventos by agendaViewModel.eventos.collectAsState()
+    // ✅ los cursos vienen directo del viewModel, ya son observables
+    val cursosBiblioteca = bibliotecaViewModel.cursos
+    val eventos by agendaViewModel.eventos.collectAsState() // si eventos sí es Flow, esto queda bien
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text("Agenda de Cursos", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -60,7 +65,7 @@ fun AgendaScreen(
         if (mostrarFormulario) {
             FormAgregarEvento(
                 agendaViewModel = agendaViewModel,
-                cursosDisponibles = cursosBiblioteca // pasamos los cursos de la biblioteca
+                cursosDisponibles = cursosBiblioteca // ✅ ahora se pasa la lista de cursos con nombres
             )
         }
 
@@ -69,10 +74,11 @@ fun AgendaScreen(
         // Pasamos la lista de eventos y cursos a la tabla
         TablaEventos(
             agendaViewModel = agendaViewModel,
-            cursosDisponibles = bibliotecaViewModel.cursos.collectAsState().value
+            cursosDisponibles = cursosBiblioteca // ✅ igual aquí
         )
     }
 }
+
 
 
 @Composable
