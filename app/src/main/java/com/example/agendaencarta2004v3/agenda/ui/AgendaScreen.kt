@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +17,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 
-
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -40,12 +43,11 @@ import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
 // FormAgregarCurso.kt (o dentro de AgendaScreen.kt, pero fuera de AgendaScreen)
 @Composable
 fun AgendaScreen(
-    agendaViewModel: AgendaViewModel = viewModel(),
-    bibliotecaViewModel: BibliotecaViewModel = viewModel()
+    agendaViewModel: AgendaViewModel,
+    bibliotecaViewModel: BibliotecaViewModel
 ) {
-    // ✅ los cursos vienen directo del viewModel, ya son observables
     val cursosBiblioteca = bibliotecaViewModel.cursos
-    val eventos by agendaViewModel.eventos.collectAsState() // si eventos sí es Flow, esto queda bien
+    val eventos by agendaViewModel.eventos.collectAsState()
 
     Column(
         modifier = Modifier
@@ -65,19 +67,19 @@ fun AgendaScreen(
         if (mostrarFormulario) {
             FormAgregarEvento(
                 agendaViewModel = agendaViewModel,
-                cursosDisponibles = cursosBiblioteca // ✅ ahora se pasa la lista de cursos con nombres
+                cursosDisponibles = cursosBiblioteca
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Pasamos la lista de eventos y cursos a la tabla
         TablaEventos(
             agendaViewModel = agendaViewModel,
-            cursosDisponibles = cursosBiblioteca // ✅ igual aquí
+            cursosDisponibles = cursosBiblioteca
         )
     }
 }
+
 
 
 
@@ -268,9 +270,9 @@ fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(maxOf(60.dp, (eventosEnCelda.size * 20).dp)) // Ajusta altura según eventos
                             .border(1.dp, Color.Gray)
-                            .padding(4.dp),
+                            .padding(4.dp)
+                            .defaultMinSize(minHeight = 60.dp),
                         contentAlignment = Alignment.TopStart
                     ) {
                         Column {
@@ -283,6 +285,7 @@ fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso
                             }
                         }
                     }
+
                 }
             }
         }

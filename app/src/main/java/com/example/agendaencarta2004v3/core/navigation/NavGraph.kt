@@ -21,23 +21,28 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
+    // 👉 Se crea solo UNA VEZ aquí
+    val bibliotecaViewModel: BibliotecaViewModel = viewModel()
+
     MainScaffold(navController, drawerState) {
         NavHost(navController, startDestination = Screen.Inicio.route) {
 
             composable(Screen.Inicio.route) { InicioScreen() }
 
-            // Aquí se corrige AgendaScreen
+            // Agenda usa el MISMO bibliotecaViewModel
             composable(Screen.Agenda.route) {
                 val agendaViewModel: AgendaViewModel = viewModel()
-                val bibliotecaViewModel: BibliotecaViewModel = viewModel()
-
                 AgendaScreen(
                     agendaViewModel = agendaViewModel,
                     bibliotecaViewModel = bibliotecaViewModel
                 )
             }
 
-            composable(Screen.Biblioteca.route) { BibliotecaScreen() }
+            // 👉 Pasamos el mismo también a BibliotecaScreen
+            composable(Screen.Biblioteca.route) {
+                BibliotecaScreen(bibliotecaViewModel = bibliotecaViewModel)
+            }
+
             composable(Screen.Actividades.route) { ActividadesScreen() }
             composable(Screen.Resumen.route) { ResumenScreen() }
         }

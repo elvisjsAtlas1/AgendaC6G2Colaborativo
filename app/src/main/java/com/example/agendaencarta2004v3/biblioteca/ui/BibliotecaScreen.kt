@@ -6,13 +6,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -40,41 +44,56 @@ import com.example.agendaencarta2004v3.biblioteca.model.Semana
 import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
 
 @Composable
-fun BibliotecaScreen(viewModel: BibliotecaViewModel = viewModel()) {
+fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
+    val cursos = bibliotecaViewModel.cursos
     var nombreCurso by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextField(
-                value = nombreCurso,
-                onValueChange = { nombreCurso = it },
-                label = { Text("Nombre del curso") },
-                modifier = Modifier.weight(1f)
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text("Biblioteca de Cursos", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.width(8.dp))
+        // 🔹 Campo de texto para nuevo curso
+        OutlinedTextField(
+            value = nombreCurso,
+            onValueChange = { nombreCurso = it },
+            label = { Text("Nombre del curso") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            Button(
-                onClick = {
-                    if (nombreCurso.isNotBlank()) {
-                        viewModel.agregarCurso(nombreCurso)
-                        nombreCurso = "" // limpia campo
-                    }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 🔹 Botón de agregar curso
+        Button(
+            onClick = {
+                if (nombreCurso.isNotBlank()) {
+                    bibliotecaViewModel.agregarCurso(nombreCurso)
+                    nombreCurso = "" // limpiar campo
                 }
-            ) {
-                Text("Agregar Curso")
-            }
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Agregar Curso")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 🔹 Lista de cursos con opciones
+        Text("Cursos Registrados:", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+
         LazyColumn {
-            items(viewModel.cursos) { curso ->
-                CursoItem(curso, viewModel)
+            items(cursos) { curso ->
+                CursoItem(curso, bibliotecaViewModel)
             }
         }
     }
 }
+
+
 
 @Composable
 fun CursoItem(curso: Curso, viewModel: BibliotecaViewModel) {

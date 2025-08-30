@@ -15,7 +15,13 @@ class AgendaViewModel : ViewModel() {
     val eventos: StateFlow<List<Evento>> = _eventos
 
     fun agregarEvento(cursoId: Int, dia: String, horaInicio: String, horaFin: String, aula: String) {
-        val nuevoEvento = Evento(cursoId, dia, horaInicio, horaFin, aula)
+        val nuevoEvento = Evento(
+            cursoId = cursoId,
+            dia = dia,
+            horaInicio = horaInicio,
+            horaFin = horaFin,
+            aula = aula
+        )
         _eventos.value = _eventos.value + nuevoEvento
     }
 }

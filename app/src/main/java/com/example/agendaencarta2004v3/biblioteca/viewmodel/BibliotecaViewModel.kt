@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import com.example.agendaencarta2004v3.biblioteca.model.Curso
 import com.example.agendaencarta2004v3.biblioteca.model.Material
 import com.example.agendaencarta2004v3.biblioteca.model.Semana
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class BibliotecaViewModel : ViewModel() {
 
@@ -28,6 +30,19 @@ class BibliotecaViewModel : ViewModel() {
 
     fun agregarMaterial(semana: Semana, material: Material) {
         semana.materiales.add(material)
+    }
+}
+
+class CursoViewModel : ViewModel() {
+    private val _cursos = MutableStateFlow<List<Curso>>(emptyList())
+    val cursos: StateFlow<List<Curso>> = _cursos
+
+    fun agregarCurso(nombre: String) {
+        val nuevoCurso = Curso(
+            id = (_cursos.value.size + 1), // ejemplo autoincremental
+            nombre = nombre
+        )
+        _cursos.value = _cursos.value + nuevoCurso
     }
 }
 

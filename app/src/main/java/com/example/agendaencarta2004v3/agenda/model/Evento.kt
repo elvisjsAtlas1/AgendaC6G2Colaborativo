@@ -1,6 +1,11 @@
 package com.example.agendaencarta2004v3.agenda.model
 
-data class Evento(
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "eventos")
+data class EventoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val cursoId: Int,
     val dia: String,
     val horaInicio: String,
