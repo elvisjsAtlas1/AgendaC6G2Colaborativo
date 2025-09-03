@@ -1,5 +1,6 @@
 package com.example.agendaencarta2004v3.agenda.ui
 
+import android.app.Application
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,21 +32,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.agendaencarta2004v3.agenda.viewmodel.AgendaViewModel
-import com.example.agendaencarta2004v3.biblioteca.model.Curso
+import com.example.agendaencarta2004v3.agenda.viewmodel.EventoViewModel
+import com.example.agendaencarta2004v3.biblioteca.entity.CursoEntity
+
 import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
 
 
 // FormAgregarCurso.kt (o dentro de AgendaScreen.kt, pero fuera de AgendaScreen)
 @Composable
 fun AgendaScreen(
-    agendaViewModel: AgendaViewModel = viewModel(),
-    bibliotecaViewModel: BibliotecaViewModel = viewModel()
+    agendaViewModel: EventoViewModel,
+    bibliotecaViewModel: BibliotecaViewModel
 ) {
-    // ✅ los cursos vienen directo del viewModel, ya son observables
-    val cursosBiblioteca = bibliotecaViewModel.cursos
-    val eventos by agendaViewModel.eventos.collectAsState() // si eventos sí es Flow, esto queda bien
+    val cursosBiblioteca by bibliotecaViewModel.cursos.collectAsState()
+    val eventos by agendaViewModel.eventos.collectAsState()
 
     Column(
         modifier = Modifier
@@ -65,28 +65,25 @@ fun AgendaScreen(
         if (mostrarFormulario) {
             FormAgregarEvento(
                 agendaViewModel = agendaViewModel,
-                cursosDisponibles = cursosBiblioteca // ✅ ahora se pasa la lista de cursos con nombres
+                cursosDisponibles = cursosBiblioteca
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Pasamos la lista de eventos y cursos a la tabla
         TablaEventos(
             agendaViewModel = agendaViewModel,
-            cursosDisponibles = cursosBiblioteca // ✅ igual aquí
+            cursosDisponibles = cursosBiblioteca
         )
     }
 }
 
-
-
 @Composable
 fun FormAgregarEvento(
-    agendaViewModel: AgendaViewModel,
-    cursosDisponibles: List<Curso> = emptyList() // cursos de la biblioteca
+    agendaViewModel: EventoViewModel,
+    cursosDisponibles: List<CursoEntity> = emptyList()
 ) {
-    var selectedCurso by remember { mutableStateOf<Curso?>(null) }
+    var selectedCurso by remember { mutableStateOf<CursoEntity?>(null) }
     var dia by remember { mutableStateOf("Lunes") }
     var horaInicio by remember { mutableStateOf("08:00") }
     var horaFin by remember { mutableStateOf("09:00") }
@@ -107,10 +104,7 @@ fun FormAgregarEvento(
             OutlinedButton(onClick = { expandedCurso = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(selectedCurso?.nombre ?: "Seleccionar Curso")
             }
-            DropdownMenu(
-                expanded = expandedCurso,
-                onDismissRequest = { expandedCurso = false }
-            ) {
+            DropdownMenu(expanded = expandedCurso, onDismissRequest = { expandedCurso = false }) {
                 cursosDisponibles.forEach { curso ->
                     DropdownMenuItem(
                         text = { Text(curso.nombre) },
@@ -195,12 +189,11 @@ fun FormAgregarEvento(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón Guardar
         Button(
             onClick = {
                 selectedCurso?.let {
                     agendaViewModel.agregarEvento(it.id, dia, horaInicio, horaFin, aula)
-                    // Limpiar campos
+                    // limpiar
                     selectedCurso = null
                     dia = "Lunes"
                     horaInicio = "08:00"
@@ -215,24 +208,18 @@ fun FormAgregarEvento(
     }
 }
 
-
-
-
-
-
 @Composable
-fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso> = emptyList()) {
+fun TablaEventos(agendaViewModel: EventoViewModel, cursosDisponibles: List<CursoEntity> = emptyList()) {
     val eventos by agendaViewModel.eventos.collectAsState()
-    val cursos = cursosDisponibles.ifEmpty { agendaViewModel.cursos.collectAsState().value }
+    val cursos = cursosDisponibles
 
     val dias = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes")
     val horas = listOf("08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00")
 
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        // Cabecera con días
         item {
             Row(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.width(60.dp)) // espacio para columna de horas
+                Spacer(modifier = Modifier.width(60.dp))
                 dias.forEach { dia ->
                     Box(
                         modifier = Modifier
@@ -247,10 +234,8 @@ fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso
             }
         }
 
-        // Filas de horas
         items(horas) { hora ->
             Row(modifier = Modifier.fillMaxWidth()) {
-                // Columna de hora
                 Box(
                     modifier = Modifier
                         .width(60.dp)
@@ -261,21 +246,21 @@ fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso
                     Text(hora, style = MaterialTheme.typography.bodyMedium)
                 }
 
-                // Columnas de días con eventos
                 dias.forEach { dia ->
                     val eventosEnCelda = eventos.filter { it.dia == dia && it.horaInicio == hora }
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(maxOf(60.dp, (eventosEnCelda.size * 20).dp)) // Ajusta altura según eventos
+                            .height(maxOf(60.dp, (eventosEnCelda.size * 20).dp))
                             .border(1.dp, Color.Gray)
                             .padding(4.dp),
                         contentAlignment = Alignment.TopStart
                     ) {
                         Column {
                             eventosEnCelda.forEach { evento ->
-                                val cursoNombre = cursos.firstOrNull { it.id == evento.cursoId }?.nombre ?: "Curso no encontrado"
+                                val cursoNombre = cursos.firstOrNull { it.id == evento.cursoId }?.nombre
+                                    ?: "Curso no encontrado"
                                 Text(
                                     "$cursoNombre (${evento.aula}) ${evento.horaInicio}-${evento.horaFin}",
                                     style = MaterialTheme.typography.bodySmall
@@ -288,6 +273,7 @@ fun TablaEventos(agendaViewModel: AgendaViewModel, cursosDisponibles: List<Curso
         }
     }
 }
+
 
 
 

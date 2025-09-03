@@ -1,5 +1,6 @@
 package com.example.agendaencarta2004v3.biblioteca.ui
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,18 +32,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.agendaencarta2004v3.biblioteca.model.Curso
-import com.example.agendaencarta2004v3.biblioteca.model.Material
-import com.example.agendaencarta2004v3.biblioteca.model.Semana
+import com.example.agendaencarta2004v3.biblioteca.entity.CursoEntity
+import com.example.agendaencarta2004v3.biblioteca.entity.MaterialEntity
+import com.example.agendaencarta2004v3.biblioteca.entity.SemanaEntity
 import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
+import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModelFactory
 
 @Composable
-fun BibliotecaScreen(viewModel: BibliotecaViewModel = viewModel()) {
+fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
     var nombreCurso by remember { mutableStateOf("") }
-
+    val cursos by bibliotecaViewModel.cursos.collectAsState()
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextField(
@@ -57,8 +60,8 @@ fun BibliotecaScreen(viewModel: BibliotecaViewModel = viewModel()) {
             Button(
                 onClick = {
                     if (nombreCurso.isNotBlank()) {
-                        viewModel.agregarCurso(nombreCurso)
-                        nombreCurso = "" // limpia campo
+                        bibliotecaViewModel.agregarCurso(nombreCurso)
+                        nombreCurso = ""
                     }
                 }
             ) {
@@ -69,17 +72,22 @@ fun BibliotecaScreen(viewModel: BibliotecaViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn {
-            items(viewModel.cursos) { curso ->
-                CursoItem(curso, viewModel)
+            items(cursos) { curso ->
+                CursoItem(curso, bibliotecaViewModel)
             }
         }
+
     }
 }
 
+
 @Composable
-fun CursoItem(curso: Curso, viewModel: BibliotecaViewModel) {
+fun CursoItem(curso: CursoEntity, viewModel: BibliotecaViewModel) {
     var expanded by remember { mutableStateOf(false) }
     var nombreSemana by remember { mutableStateOf("") }
+
+    // 🔹 Obtener las semanas desde Room (flow -> collectAsState)
+    val semanas by viewModel.getSemanasByCurso(curso.id).collectAsState(initial = emptyList())
 
     Column(
         modifier = Modifier
@@ -103,7 +111,7 @@ fun CursoItem(curso: Curso, viewModel: BibliotecaViewModel) {
                 Button(
                     onClick = {
                         if (nombreSemana.isNotBlank()) {
-                            viewModel.agregarSemana(curso, nombreSemana)
+                            viewModel.agregarSemana(curso.id, nombreSemana)
                             nombreSemana = "" // limpiar
                         }
                     }
@@ -114,7 +122,7 @@ fun CursoItem(curso: Curso, viewModel: BibliotecaViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            curso.semanas.forEach { semana ->
+            semanas.forEach { semana ->
                 SemanaItem(semana, viewModel)
             }
         }
@@ -122,11 +130,13 @@ fun CursoItem(curso: Curso, viewModel: BibliotecaViewModel) {
 }
 
 
-
 @Composable
-fun SemanaItem(semana: Semana, viewModel: BibliotecaViewModel) {
+fun SemanaItem(semana: SemanaEntity, viewModel: BibliotecaViewModel) {
     var expanded by remember { mutableStateOf(false) }
     var mostrarDialogo by remember { mutableStateOf(false) }
+
+    // 🔹 Obtener materiales de la BD
+    val materiales by viewModel.getMaterialesBySemana(semana.id).collectAsState(initial = emptyList())
 
     Column(
         modifier = Modifier
@@ -147,47 +157,42 @@ fun SemanaItem(semana: Semana, viewModel: BibliotecaViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            semana.materiales.forEach { material ->
-                MaterialItem(material) // ✅ solo pasa el material
+            materiales.forEach { material ->
+                MaterialItem(material)
             }
         }
     }
 
     if (mostrarDialogo) {
         DialogAgregarMaterial(
-            semana = semana,
+            semanaId = semana.id,
             viewModel = viewModel,
             onDismiss = { mostrarDialogo = false }
         )
     }
 }
 
+
 @Composable
-fun MaterialItem(material: Material) {
-    val icon = when (material) {
-        is Material.Documento -> "📄"
-        is Material.Imagen -> "🖼"
-        is Material.Enlace -> "🔗"
-    }
-    val titulo = when (material) {
-        is Material.Documento -> material.titulo
-        is Material.Imagen -> material.titulo
-        is Material.Enlace -> material.titulo
+fun MaterialItem(material: MaterialEntity) {
+    val icon = when (material.tipo) {
+        "Documento" -> "📄"
+        "Imagen" -> "🖼"
+        "Enlace" -> "🔗"
+        else -> "❓"
     }
 
     Text(
-        text = "$icon $titulo",
+        text = "$icon ${material.titulo}",
         modifier = Modifier.padding(start = 32.dp, top = 4.dp)
     )
 }
 
 
 
-
-
 @Composable
 fun DialogAgregarMaterial(
-    semana: Semana,
+    semanaId: Int,
     viewModel: BibliotecaViewModel,
     onDismiss: () -> Unit
 ) {
@@ -244,12 +249,7 @@ fun DialogAgregarMaterial(
         confirmButton = {
             Button(onClick = {
                 if (titulo.isNotBlank()) {
-                    val material = when (tipo) {
-                        "Documento" -> Material.Documento(id = semana.materiales.size + 1, titulo, enlace)
-                        "Imagen" -> Material.Imagen(id = semana.materiales.size + 1, titulo, enlace)
-                        else -> Material.Enlace(id = semana.materiales.size + 1, titulo, enlace)
-                    }
-                    viewModel.agregarMaterial(semana, material)
+                    viewModel.agregarMaterial(semanaId, titulo, tipo, uri = if (tipo != "Enlace") enlace else null, url = if (tipo == "Enlace") enlace else null)
                     onDismiss()
                 }
             }) {
