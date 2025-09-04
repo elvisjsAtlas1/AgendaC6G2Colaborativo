@@ -21,7 +21,7 @@ class BibliotecaViewModel(
     private val materialRepository: MaterialRepository
 ) : ViewModel() {
 
-    // 🔹 Cursos expuestos como Flow
+    // 🔹 Cursos expuestos como StateFlow
     val cursos: StateFlow<List<CursoEntity>> =
         cursoRepository.getAllCursos()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -56,20 +56,13 @@ class BibliotecaViewModel(
     // ------------------------
     fun agregarMaterial(
         semanaId: Int,
-        titulo: String,
-        tipo: String,
-        uri: String? = null,
+        info: String,
+        uriDoc: String? = null,
+        uriImg: String? = null,
         url: String? = null
     ) {
         viewModelScope.launch {
-            val material = MaterialEntity(
-                semanaId = semanaId,
-                titulo = titulo,
-                tipo = tipo,
-                uri = uri,
-                url = url
-            )
-            materialRepository.insertMaterial(material)
+            materialRepository.agregarMaterial(semanaId, info, uriDoc, uriImg, url)
         }
     }
 

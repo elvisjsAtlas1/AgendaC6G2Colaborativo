@@ -18,8 +18,8 @@ import androidx.room.PrimaryKey
 data class MaterialEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val semanaId: Int,
-    val titulo: String,
-    val uri: String? = null,
-    val url: String? = null,
-    val tipo: String // "DOCUMENTO", "IMAGEN", "ENLACE"
+    val info: String,
+    val uriDoc: String? = null,   // Ruta de documento
+    val uriImg: String? = null,   // Ruta de imagen
+    val url: String? = null       // Enlace web
 )

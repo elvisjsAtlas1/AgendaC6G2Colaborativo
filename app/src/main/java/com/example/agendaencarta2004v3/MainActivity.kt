@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.agendaencarta2004v3.core.materialTheme.MyAppTheme
 import com.example.agendaencarta2004v3.core.navigation.AppNavigation
 import com.example.agendaencarta2004v3.ui.theme.AgendaEncarta2004V3Theme
 
@@ -18,7 +19,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AppNavigation()
+            MyAppTheme {
+                AppNavigation()
+            }
         }
     }
 }

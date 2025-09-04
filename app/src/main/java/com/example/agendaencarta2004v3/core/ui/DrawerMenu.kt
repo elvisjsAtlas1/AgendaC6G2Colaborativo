@@ -1,11 +1,16 @@
 package com.example.agendaencarta2004v3.core.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,7 +26,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun DrawerMenu(navController: NavHostController, drawerState: DrawerState) {
     val scope = rememberCoroutineScope()
-
     val screens = listOf(
         Screen.Inicio,
         Screen.Agenda,
@@ -33,25 +37,30 @@ fun DrawerMenu(navController: NavHostController, drawerState: DrawerState) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE0E0E0)) // gris claro
+            .background(MaterialTheme.colorScheme.surface) // Surface del tema
             .padding(8.dp)
     ) {
         Text(
             text = "Menú Principal",
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(8.dp)
         )
 
         screens.forEach { screen ->
             Button(
                 onClick = {
-                    scope.launch { drawerState.close() } // cerrar menú al seleccionar
+                    scope.launch { drawerState.close() }
                     navController.navigate(screen.route) {
                         launchSingleTop = true
                         restoreState = true
                         popUpTo(Screen.Inicio.route) { saveState = true }
                     }
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
@@ -61,4 +70,5 @@ fun DrawerMenu(navController: NavHostController, drawerState: DrawerState) {
         }
     }
 }
+
 

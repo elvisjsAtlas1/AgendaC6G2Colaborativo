@@ -10,7 +10,20 @@ class MaterialRepository(private val materialDao: MaterialDao) {
         return materialDao.getMaterialesBySemana(semanaId)
     }
 
-    suspend fun insertMaterial(material: MaterialEntity) {
-        materialDao.insertMaterial(material)
+    suspend fun agregarMaterial(
+        semanaId: Int,
+        info: String,
+        uriDoc: String? = null,
+        uriImg: String? = null,
+        url: String? = null
+    ) {
+        val nuevo = MaterialEntity(
+            semanaId = semanaId,
+            info = info,
+            uriDoc = uriDoc,
+            uriImg = uriImg,
+            url = url
+        )
+        materialDao.insertMaterial(nuevo)
     }
 }

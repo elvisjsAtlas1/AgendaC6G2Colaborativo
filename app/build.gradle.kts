@@ -43,6 +43,7 @@ android {
 
 dependencies {
 implementation(libs.androidx.media3.database)
+    implementation(libs.androidx.foundation.layout)
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2025.01.00")
     implementation(composeBom)
