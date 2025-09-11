@@ -1,6 +1,5 @@
 package com.example.agendaencarta2004v3.OnBoarding
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,14 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,77 +27,251 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.agendaencarta2004v3.core.navigation.Screen
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.LibraryBooks
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun OnboardingScreen(
     navController: NavController,
     onFinish: () -> Unit
 ) {
-    val pages = listOf(
-        "Organiza tus actividades",
-        "Administra tu biblioteca",
-        "Revisa tu resumen"
-    )
+    val scope = rememberCoroutineScope()
+    val pages = remember {
+        listOf(
+            OnboardPage(
+                title = "Planifica tu semana",
+                desc = "Crea tu horario por día y hora. Toca un bloque para ver, editar o eliminar.",
+                icon = Icons.Outlined.CalendarMonth,
+                bullets = listOf(
+                    "Timeline con scroll vertical y horizontal",
+                    "Eventos por curso, hora y aula",
+                    "Edición rápida desde la tarjeta"
+                )
+            ),
+            OnboardPage(
+                title = "Gestiona actividades",
+                desc = "Registra tareas con fecha. Desliza para marcar como hecha o eliminar.",
+                icon = Icons.Outlined.TaskAlt,
+                bullets = listOf(
+                    "Filtros: Todas, Por hacer, Hechas, Vencidas",
+                    "Swipe (Material 3) para acciones rápidas",
+                    "Checkbox para completar"
+                )
+            ),
+            OnboardPage(
+                title = "Tu biblioteca de cursos",
+                desc = "Organiza materiales por curso y semana. Adjunta documentos, imágenes o enlaces.",
+                icon = Icons.Outlined.LibraryBooks,
+                bullets = listOf(
+                    "Semanas por curso",
+                    "Material: documento, imagen o link",
+                    "Abrir archivos con un toque"
+                )
+            ),
+            OnboardPage(
+                title = "Resumen con gráficas",
+                desc = "Mira tu progreso semanal con un gráfico de barras táctil.",
+                icon = Icons.Outlined.BarChart,
+                bullets = listOf(
+                    "Semanas dinámicas según datos",
+                    "Etiquetas legibles por fecha",
+                    "Tap para ver detalle por semana"
+                )
+            ),
+            OnboardPage(
+                title = "Añade por voz",
+                desc = "Dí: “agrega tarea de mate para mañana”. La app detecta curso y fecha.",
+                icon = Icons.Outlined.Mic,
+                bullets = listOf(
+                    "Fechas relativas: hoy, mañana, pasado",
+                    "Soporta dd/MM y “21 de setiembre”",
+                    "Curso por coincidencia inteligente"
+                )
+            )
+        )
+    }
 
-    var currentPage by remember { mutableStateOf(0) }
+    val pagerState = rememberPagerState(pageCount = { pages.size })
 
-    Column(
+    // Fondo oscuro con degradado sutil
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Contenido principal
-        Text(
-            text = pages[currentPage],
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.weight(1f).padding(top = 100.dp),
-            textAlign = TextAlign.Center
-        )
-
-        // 🔹 Indicadores (puntitos)
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            pages.forEachIndexed { index, _ ->
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .padding(4.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (index == currentPage) Color.Blue else Color.Gray
-                        )
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0B1220), // fondo profundo
+                        Color(0xFF0F172A)  // surface dark
+                    )
                 )
-            }
-        }
+            )
+            .padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Spacer(Modifier.height(12.dp))
 
-        Spacer(Modifier.height(24.dp))
-
-        // 🔹 Botón inferior
-        if (currentPage < pages.lastIndex) {
-            Button(
-                onClick = { currentPage++ },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Siguiente")
+            // Pager (contenido)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) { page ->
+                OnboardPageCard(page = pages[page])
             }
-        } else {
-            Button(
-                onClick = {
-                    onFinish() // Guarda flag en prefs/datastore
-                    navController.navigate(Screen.Inicio.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+
+            // Indicadores
+            DotsIndicator(
+                total = pages.size,
+                selectedIndex = pagerState.currentPage
+            )
+
+            // Botonera inferior
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (pagerState.currentPage > 0) {
+                    OutlinedButton(onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    }) { Text("Atrás") }
+                }
+
+                val isLast = pagerState.currentPage == pages.lastIndex
+                FilledTonalButton(
+                    onClick = {
+                        if (isLast) {
+                            onFinish()
+                            navController.navigate(Screen.Inicio.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
+                        } else {
+                            scope.launch {
+                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            }
+                        }
                     }
-                },
+                ) {
+                    if (isLast) Text("Comenzar")
+                    else {
+                        Text("Siguiente")
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Outlined.KeyboardArrowRight, contentDescription = null)
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+@Composable
+private fun OnboardPageCard(page: OnboardPage) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Icono grande
+            Icon(
+                imageVector = page.icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(72.dp)
+            )
+
+            Text(
+                text = page.title,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = page.desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            // Bullets
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Comenzar")
+                page.bullets.forEach {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun DotsIndicator(total: Int, selectedIndex: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        repeat(total) { index ->
+            val color by animateColorAsState(
+                if (index == selectedIndex) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceVariant,
+                label = "dotColor"
+            )
+            Box(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .size(if (index == selectedIndex) 10.dp else 8.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+        }
+    }
+}
+
+private data class OnboardPage(
+    val title: String,
+    val desc: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val bullets: List<String>
+)
 
 

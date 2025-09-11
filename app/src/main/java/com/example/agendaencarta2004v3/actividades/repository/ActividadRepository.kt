@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 class ActividadRepository(private val dao: ActividadDao) {
     fun getAllActividades(): Flow<List<ActividadEntity>> = dao.getAllActividades()
+
     suspend fun insertActividad(actividad: ActividadEntity) {
         Log.d("ActividadRepository", "Insertando actividad: $actividad")
         dao.insertActividad(actividad)

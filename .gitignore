@@ -1,15 +1,35 @@
+# Android/IntelliJ
 *.iml
-.gradle
-/local.properties
+.gradle/
+local.properties
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+/.idea/deploymentTargetDropDown.xml
+/.idea/misc.xml
+/.idea/other.xml
+/.idea/gradle.xml
+
+# Build outputs
+**/build/
+**/out/
+
+# Logs
+*.log
+
+# NDK / CMakelists
+.cxx/
+
+# Keystores (¡no subas claves reales!)
+*.jks
+*.keystore
+
+# Compose preview cache
+**/compose-snapshots/
+
+# APKs / bundles
+*.apk
+*.aab

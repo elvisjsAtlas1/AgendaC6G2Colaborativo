@@ -25,7 +25,7 @@ import com.example.agendaencarta2004v3.biblioteca.entity.SemanaEntity
         MaterialEntity::class,
         ActividadEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

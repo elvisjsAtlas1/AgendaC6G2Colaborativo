@@ -1,63 +1,68 @@
 package com.example.agendaencarta2004v3.core.materialTheme
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 
-// 🎨 Paleta personalizada
-private val MyColorScheme = lightColorScheme(
-    primary = Color(0xFF04ADBF),   // Principal → Botones, resaltados
-    secondary = Color(0xFF03658C), // Secundario → Detalles, iconos
-    tertiary = Color(0xFF0388A6),  // Apoyo → Acciones especiales
-    background = Color(0xFF023059), // Fondo de la app
-    surface = Color(0xFF023E73),   // Tarjetas, menús, superficies
-    onPrimary = Color.White,       // Texto sobre primary
-    onSecondary = Color.White,     // Texto sobre secondary
-    onTertiary = Color.White,      // Texto sobre tertiary
-    onBackground = Color.White,    // Texto sobre background
-    onSurface = Color.White        // Texto sobre surface
+// Paleta fallback (sobria) – tonos teal/indigo/gris
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF0EA5A6),          // Teal sobrio
+    onPrimary = Color.White,
+    secondary = Color(0xFF6366F1),        // Indigo soft
+    onSecondary = Color.White,
+    tertiary = Color(0xFF10B981),         // Emerald
+    onTertiary = Color.White,
+    background = Color(0xFFF8FAFC),       // Slate-50
+    onBackground = Color(0xFF0F172A),     // Slate-900
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1F2937),
+    surfaceVariant = Color(0xFFE5E7EB),
+    onSurfaceVariant = Color(0xFF475569),
 )
 
-// 🖌️ Tema global
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFF22D3EE),
+    onPrimary = Color(0xFF00323A),
+    secondary = Color(0xFF8EA2FF),
+    onSecondary = Color(0xFF0D1333),
+    tertiary = Color(0xFF34D399),
+    onTertiary = Color(0xFF003222),
+    background = Color(0xFF0B1220),       // Azul gris muy oscuro
+    onBackground = Color(0xFFE5E7EB),
+    surface = Color(0xFF0F172A),          // “Card”/Sheet
+    onSurface = Color(0xFFE5E7EB),
+    surfaceVariant = Color(0xFF1F2937),
+    onSurfaceVariant = Color(0xFFCBD5E1),
+)
+
 @Composable
-fun MyAppTheme(content: @Composable () -> Unit) {
+fun MyAppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    // Dynamic color (Android 12+) con fallback sobrio
+    val colorScheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val dynamic = if (darkTheme) dynamicDarkColorScheme(LocalContext.current)
+            else dynamicLightColorScheme(LocalContext.current)
+            dynamic
+        }
+        else -> if (darkTheme) DarkColors else LightColors
+    }
+
     MaterialTheme(
-        colorScheme = MyColorScheme,
-        typography = Typography(), // Puedes personalizar después
+        colorScheme = colorScheme,
+        typography = Typography(),   // luego puedes cargar Inter/RobotoFlex
+        shapes = Shapes(
+            extraSmall = RoundedCornerShape(8),
+            small      = RoundedCornerShape(12),
+            medium     = RoundedCornerShape(16),
+            large      = RoundedCornerShape(20),
+            extraLarge = RoundedCornerShape(28)
+        ),
         content = content
     )
-
 }
-@Composable
-fun DropdownMenuItemStyled(
-    text: String,
-    selected: Boolean = false,  // ✅ Agregado para resaltar seleccionado
-    onClick: () -> Unit
-) {
-    DropdownMenuItem(
-        onClick = onClick,
-        text = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        if (selected) Color(0xFF04ADBF) // Azul más claro si está seleccionado
-                        else Color(0xFF03658C)        // Fondo oscuro para los demás
-                    )
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = text,
-                    color = Color.White // Texto blanco
-                )
-            }
-        }
-    )
-}
-

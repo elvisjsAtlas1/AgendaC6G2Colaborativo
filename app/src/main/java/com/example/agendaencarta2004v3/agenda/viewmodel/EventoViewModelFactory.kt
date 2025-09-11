@@ -10,13 +10,14 @@ class EventoViewModelFactory(
     private val application: Application
 ) : ViewModelProvider.Factory {
 
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EventoViewModel::class.java)) {
-            val dao = AppDatabase.getDatabase(application).eventoDao() // 👈 cambio aquí
+            val db = AppDatabase.getDatabase(application) // usa Application context
+            val dao = db.eventoDao()
             val repository = EventoRepository(dao)
-            @Suppress("UNCHECKED_CAST")
             return EventoViewModel(repository) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

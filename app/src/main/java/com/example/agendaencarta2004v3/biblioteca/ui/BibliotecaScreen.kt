@@ -1,6 +1,5 @@
 package com.example.agendaencarta2004v3.biblioteca.ui
 
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -14,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,8 +25,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.outlined.CalendarViewWeek
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.InsertDriveFile
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,89 +77,107 @@ import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
 import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModelFactory
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TopAppBar
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
     var nombreCurso by remember { mutableStateOf("") }
     val cursos by bibliotecaViewModel.cursos.collectAsState()
-
-    // 👇 Controla si el formulario está abierto o cerrado
     var showForm by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)
-    ) {
-        // 🔹 Botón para mostrar/ocultar formulario
-        Button(
-            onClick = { showForm = !showForm },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (showForm) "Ocultar Formulario" else "➕ Agregar Curso")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Biblioteca") }
+                // 👇 sin acciones
+            )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 🔹 Animación de despliegue del formulario
-        AnimatedVisibility(visible = showForm) {
+    ) { inner ->
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.fillMaxSize().padding(inner)
+        ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = MaterialTheme.shapes.medium
-                    )
-                    .padding(16.dp)
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = nombreCurso,
-                        onValueChange = { nombreCurso = it },
-                        label = { Text("Nombre del curso") },
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            cursorColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                // ---- Botón compacto para desplegar el formulario de CURSO ----
+                FilledTonalButton(
+                    onClick = { showForm = !showForm },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (showForm) "Ocultar formulario" else "Añadir curso")
+                }
 
-                    Button(
-                        onClick = {
-                            if (nombreCurso.isNotBlank()) {
-                                bibliotecaViewModel.agregarCurso(nombreCurso)
-                                nombreCurso = ""
-                                showForm = false // 👈 Oculta formulario después de guardar
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary,
-                            contentColor = MaterialTheme.colorScheme.onTertiary
+                // ---- Formulario de curso (colapsable) ----
+                AnimatedVisibility(visible = showForm) {
+                    ElevatedCard(
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     ) {
-                        Text("Guardar")
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = nombreCurso,
+                                    onValueChange = { nombreCurso = it },
+                                    label = { Text("Nombre del curso") },
+                                    leadingIcon = { Icon(Icons.Outlined.School, null) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilledTonalButton(
+                                    onClick = {
+                                        if (nombreCurso.isNotBlank()) {
+                                            bibliotecaViewModel.agregarCurso(nombreCurso.trim())
+                                            nombreCurso = ""
+                                            showForm = false
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Outlined.Check, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Guardar")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ---- Lista de cursos ----
+                if (cursos.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Aún no has agregado cursos.")
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(cursos, key = { it.id }) { curso ->
+                            CursoItem(curso, bibliotecaViewModel)
+                        }
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 🔹 Lista de cursos
-        LazyColumn {
-            items(cursos) { curso ->
-                CursoItem(curso, bibliotecaViewModel)
-            }
-        }
     }
 }
-
 
 
 @Composable
@@ -150,522 +185,389 @@ fun CursoItem(curso: CursoEntity, viewModel: BibliotecaViewModel) {
     var expanded by remember { mutableStateOf(false) }
     var showForm by remember { mutableStateOf(false) }
     var nombreSemana by remember { mutableStateOf("") }
-
-    // 🔹 Obtener las semanas desde Room (flow -> collectAsState)
     val semanas by viewModel.getSemanasByCurso(curso.id).collectAsState(initial = emptyList())
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(12.dp)
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
     ) {
-        // Encabezado del curso
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "📚 ${curso.nombre}",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
 
-        // 🔹 Contenido expandido
-        AnimatedVisibility(visible = expanded) {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
+            // Header del curso
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("📚 ${curso.nombre}",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
 
-                // Botón para mostrar formulario
-                Button(
-                    onClick = { showForm = !showForm },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(if (showForm) "Ocultar Formulario" else "➕ Añadir Semana")
-                }
+            AnimatedVisibility(visible = expanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 12.dp)) {
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    // Botón compacto para desplegar form de SEMANA
+                    FilledTonalButton(
+                        onClick = { showForm = !showForm },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (showForm) "Ocultar formulario" else "Añadir semana")
+                    }
 
-                // Formulario animado
-                AnimatedVisibility(visible = showForm) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = nombreSemana,
-                            onValueChange = { nombreSemana = it },
-                            label = { Text("Nombre de la semana") },
-                            modifier = Modifier.weight(1f),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
+                    // Form de semana (colapsable)
+                    AnimatedVisibility(visible = showForm) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = nombreSemana,
+                                onValueChange = { nombreSemana = it },
+                                label = { Text("Nombre de la semana") },
+                                modifier = Modifier.weight(1f)
                             )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
+                            Spacer(Modifier.width(8.dp))
+                            Button(onClick = {
                                 if (nombreSemana.isNotBlank()) {
-                                    viewModel.agregarSemana(curso.id, nombreSemana)
+                                    viewModel.agregarSemana(curso.id, nombreSemana.trim())
                                     nombreSemana = ""
-                                    showForm = false // Oculta formulario tras guardar
+                                    showForm = false
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary,
-                                contentColor = MaterialTheme.colorScheme.onTertiary
-                            )
-                        ) {
-                            Text("Guardar")
+                            }) { Text("Guardar") }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 🔹 Lista de semanas
-                semanas.forEach { semana ->
-                    SemanaItem(semana, viewModel)
+                    // Lista de semanas
+                    semanas.forEach { semana ->
+                        SemanaItem(semana, viewModel)
+                    }
                 }
             }
         }
     }
 }
 
+@Composable
+fun MaterialCard(
+    material: MaterialEntity,
+    onOpen: (Uri, String) -> Unit,
+    onOpenUrl: (String) -> Unit
+) {
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.PushPin, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(material.info, style = MaterialTheme.typography.bodyLarge)
+            }
+
+            material.uriDoc?.let { str ->
+                val uri = Uri.parse(str)
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onOpen(uri, "application/*") }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.InsertDriveFile, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(uri.lastPathSegment ?: "Documento", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            material.uriImg?.let { str ->
+                val uri = Uri.parse(str)
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onOpen(uri, "image/*") }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.Image, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(uri.lastPathSegment ?: "Imagen", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            material.url?.let { link ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onOpenUrl(link) }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.Link, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(link, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun SemanaItem(semana: SemanaEntity, viewModel: BibliotecaViewModel) {
-    var expanded by remember { mutableStateOf(false) }
-    var showForm by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val materiales by viewModel.getMaterialesBySemana(semana.id).collectAsState(initial = emptyList())
+    var expanded by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(12.dp)
-    ) {
-        // Encabezado desplegable
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "📅 ${semana.titulo}",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        AnimatedVisibility(visible = expanded) {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
-
-                // Botón para mostrar/ocultar formulario
-                Button(
-                    onClick = { showForm = !showForm },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(if (showForm) "Ocultar Formulario" else "➕ Agregar Material")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Formulario animado
-                AnimatedVisibility(visible = showForm) {
-                    Column {
-                        var info by remember { mutableStateOf("") }
-                        var url by remember { mutableStateOf("") }
-                        var uriDoc by remember { mutableStateOf<Uri?>(null) }
-                        var uriImg by remember { mutableStateOf<Uri?>(null) }
-
-                        OutlinedTextField(
-                            value = info,
-                            onValueChange = { info = it },
-                            label = { Text("Descripción / Info") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        SelectorArchivo { uriDoc = it }
-                        uriDoc?.let { Text("📄 Documento: ${it.lastPathSegment}") }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        SelectorImagen { uriImg = it }
-                        uriImg?.let { Text("🖼 Imagen: ${it.lastPathSegment}") }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = url,
-                            onValueChange = { url = it },
-                            label = { Text("Enlace (opcional)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                cursorColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                if (info.isNotBlank()) {
-                                    viewModel.agregarMaterial(
-                                        semanaId = semana.id,
-                                        info = info,
-                                        uriDoc = uriDoc?.toString(),
-                                        uriImg = uriImg?.toString(),
-                                        url = url.takeIf { it.isNotEmpty() }
-                                    )
-                                    info = ""
-                                    url = ""
-                                    uriDoc = null
-                                    uriImg = null
-                                    showForm = false
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary,
-                                contentColor = MaterialTheme.colorScheme.onTertiary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Guardar")
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Mostrar materiales agregados
-
-                materiales.forEach { material ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp, horizontal = 4.dp)
-                            .clickable { /* acción opcional */ },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(
-                                text = "📌 ${material.info}",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            // Documento
-                            material.uriDoc?.let { uriString ->
-                                val uri = Uri.parse(uriString)
-                                val nombreArchivo = obtenerNombreArchivo(context, uri)
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            abrirArchivo(context, uri, context.contentResolver.getType(uri) ?: "*/*")
-                                        }
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        "📄",
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = nombreArchivo,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-
-                            // Imagen
-                            material.uriImg?.let { uriString ->
-                                val uri = Uri.parse(uriString)
-                                val nombreArchivo = obtenerNombreArchivo(context, uri)
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            abrirArchivo(context, uri, context.contentResolver.getType(uri) ?: "*/*")
-                                        }
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        "🖼",
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = nombreArchivo,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-
-                            // Enlace
-                            material.url?.let { url ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                            try {
-                                                context.startActivity(intent)
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, "No se puede abrir el enlace", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        "🔗",
-                                        fontSize = 18.sp,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = url,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DialogAgregarMaterial(
-    semana: SemanaEntity,
-    bibliotecaViewModel: BibliotecaViewModel,
-    onDismiss: () -> Unit
-) {
+    // Form material (colapsable)
+    var showFormMat by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
     var uriDoc by remember { mutableStateOf<Uri?>(null) }
     var uriImg by remember { mutableStateOf<Uri?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Agregar Material",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+    val materiales by viewModel.getMaterialesBySemana(semana.id)
+        .collectAsState(initial = emptyList())
+
+    // Launchers uniformes
+    val docPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri -> uriDoc = uri }
+
+    val imgPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> uriImg = uri }
+
+    val pillHeight = 44.dp
+
+    ElevatedCard(
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(Modifier.fillMaxWidth().padding(12.dp)) {
+
+            // Header de semana (expand/collapse)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 🔹 Info (obligatorio)
-                OutlinedTextField(
-                    value = info,
-                    onValueChange = { info = it },
-                    label = { Text("Descripción / Info") },
-                    modifier = Modifier.fillMaxWidth()
+                Icon(Icons.Outlined.CalendarViewWeek, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    semana.titulo,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
                 )
-
-                // 🔹 Documento
-                Column {
-                    SelectorArchivo { uri -> uriDoc = uri }
-                    uriDoc?.let {
-                        Text(
-                            text = "📄 ${it.lastPathSegment ?: "Documento seleccionado"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-
-                // 🔹 Imagen
-                Column {
-                    SelectorImagen { uri -> uriImg = uri }
-                    uriImg?.let {
-                        Text(
-                            text = "🖼 ${it.lastPathSegment ?: "Imagen seleccionada"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-
-                // 🔹 Enlace
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = { Text("Enlace (opcional)") },
-                    modifier = Modifier.fillMaxWidth()
+                Icon(
+                    imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (info.isNotBlank()) {
-                        bibliotecaViewModel.agregarMaterial(
-                            semanaId = semana.id,
-                            info = info,
-                            uriDoc = uriDoc?.toString(),
-                            uriImg = uriImg?.toString(),
-                            url = url.takeIf { it.isNotEmpty() }
-                        )
-                        onDismiss()
+
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(top = 12.dp)
+                ) {
+
+                    // Botón para mostrar/ocultar formulario de Material
+                    FilledTonalButton(
+                        onClick = { showFormMat = !showFormMat },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (showFormMat) "Ocultar formulario" else "Agregar material")
                     }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text("Agregar")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Text("Cancelar")
+
+                    // -------- Formulario de material (colapsable) --------
+                    AnimatedVisibility(visible = showFormMat) {
+                        ElevatedCard(
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // Descripción
+                                OutlinedTextField(
+                                    value = info,
+                                    onValueChange = { info = it },
+                                    label = { Text("Descripción / Info") },
+                                    leadingIcon = { Icon(Icons.Outlined.Description, null) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Botones Documento / Imagen (uniformes)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { docPicker.launch(arrayOf("*/*")) },
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(pillHeight),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        Icon(Icons.Outlined.AttachFile, null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Documento", maxLines = 1, softWrap = false)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { imgPicker.launch("image/*") },
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(pillHeight),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        Icon(Icons.Outlined.Image, null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Imagen", maxLines = 1, softWrap = false)
+                                    }
+                                }
+
+                                // Nombres seleccionados (opcional)
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    uriDoc?.let {
+                                        Text(
+                                            "📄 ${it.lastPathSegment ?: "Documento seleccionado"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    uriImg?.let {
+                                        Text(
+                                            "🖼 ${it.lastPathSegment ?: "Imagen seleccionada"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Enlace
+                                OutlinedTextField(
+                                    value = url,
+                                    onValueChange = { url = it },
+                                    label = { Text("Enlace (opcional)") },
+                                    leadingIcon = { Icon(Icons.Outlined.Link, null) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Acciones (Cancelar / Guardar) – mismo estilo y altura
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            info = ""; url = ""; uriDoc = null; uriImg = null
+                                            showFormMat = false
+                                        },
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(pillHeight),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        Text("Cancelar", maxLines = 1, softWrap = false)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            if (info.isNotBlank()) {
+                                                viewModel.agregarMaterial(
+                                                    semanaId = semana.id,
+                                                    info = info.trim(),
+                                                    uriDoc = uriDoc?.toString(),
+                                                    uriImg = uriImg?.toString(),
+                                                    url = url.takeIf { it.isNotBlank() }
+                                                )
+                                                info = ""; url = ""; uriDoc = null; uriImg = null
+                                                showFormMat = false
+                                            }
+                                        },
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(pillHeight),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        Icon(Icons.Outlined.Save, contentDescription = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Guardar", maxLines = 1, softWrap = false)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // -------- Lista de materiales --------
+                    if (materiales.isEmpty()) {
+                        Text(
+                            "Sin materiales.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            materiales.forEach { material ->
+                                MaterialCard(
+                                    material = material,
+                                    onOpen = { uri: Uri, mime: String ->
+                                        abrirArchivo(context, uri, mime)
+                                    },
+                                    onOpenUrl = { link: String ->
+                                        try {
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                                            )
+                                        } catch (_: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                "No se puede abrir el enlace",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 
 
 @Composable
 fun SelectorArchivo(onArchivoSeleccionado: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let { onArchivoSeleccionado(it) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(onArchivoSeleccionado)
     }
-
-    Button(
-        onClick = { launcher.launch(arrayOf("*/*")) }, // puedes filtrar por tipo: "application/pdf", "text/*"
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("📄 Seleccionar Documento")
+    OutlinedButton(onClick = { launcher.launch(arrayOf("*/*")) }) {
+        Icon(Icons.Outlined.AttachFile, null); Spacer(Modifier.width(8.dp)); Text("Documento")
     }
 }
 
 @Composable
 fun SelectorImagen(onImagenSeleccionada: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onImagenSeleccionada(it) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let(onImagenSeleccionada)
     }
-
-    Button(
-        onClick = { launcher.launch("image/*") },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("🖼 Seleccionar Imagen")
+    OutlinedButton(onClick = { launcher.launch("image/*") }) {
+        Icon(Icons.Outlined.Image, null); Spacer(Modifier.width(8.dp)); Text("Imagen")
     }
 }
 
-@Composable
-fun MaterialItem(material: MaterialEntity, context: Context = LocalContext.current) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-            .padding(12.dp)
-    ) {
-        // Descripción / info
-        Text("📌 ${material.info}", fontWeight = FontWeight.Medium)
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Documento
-        material.uriDoc?.let {
-            val uri = Uri.parse(it)
-            val nombre = obtenerNombreArchivo(context, uri)
-            Text(
-                "📄 $nombre",
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable {
-                    abrirArchivo(context, uri, "application/*")
-                }
-            )
-        }
-
-        // Imagen
-        material.uriImg?.let {
-            val uri = Uri.parse(it)
-            Text(
-                "🖼 Imagen",
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable {
-                    abrirArchivo(context, uri, "image/*")
-                }
-            )
-        }
-
-        // URL
-        material.url?.let {
-            Text(
-                "🔗 $it",
-                color = Color.Blue,
-                modifier = Modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it))
-                    context.startActivity(intent)
-                }
-            )
-        }
-    }
-}
 
 fun abrirArchivo(context: Context, uri: Uri, tipo: String) {
     val intent = Intent(Intent.ACTION_VIEW).apply {

@@ -13,4 +13,7 @@ interface CursoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCurso(curso: CursoEntity)
+
+    @Query("SELECT * FROM cursos WHERE nombre LIKE :q")
+    suspend fun searchByName(q: String): List<CursoEntity>
 }

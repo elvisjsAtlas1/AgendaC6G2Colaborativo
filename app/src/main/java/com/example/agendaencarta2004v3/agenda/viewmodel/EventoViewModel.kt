@@ -15,38 +15,29 @@ class EventoViewModel(
     private val repository: EventoRepository
 ) : ViewModel() {
 
-    // Flujo con todos los eventos
     val eventos: StateFlow<List<EventoEntity>> =
-        repository.getAll()
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        repository.getAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // CRUD
     fun agregarEvento(cursoId: Int, dia: String, horaInicio: String, horaFin: String, aula: String) {
-        val nuevoEvento = EventoEntity(
-            cursoId = cursoId,
-            dia = dia,
-            horaInicio = horaInicio,
-            horaFin = horaFin,
-            aula = aula
-        )
-        viewModelScope.launch { repository.insert(nuevoEvento) }
+        viewModelScope.launch {
+            repository.insert(
+                EventoEntity(
+                    id = 0,
+                    cursoId = cursoId,
+                    dia = dia,
+                    horaInicio = horaInicio,
+                    horaFin = horaFin,
+                    aula = aula
+                )
+            )
+        }
     }
 
-    fun insertAll(eventos: List<EventoEntity>) {
-        viewModelScope.launch { repository.insertAll(eventos) }
-    }
-
-    fun update(evento: EventoEntity) {
+    fun actualizarEvento(evento: EventoEntity) {
         viewModelScope.launch { repository.update(evento) }
     }
 
-    fun delete(evento: EventoEntity) {
+    fun eliminarEvento(evento: EventoEntity) {
         viewModelScope.launch { repository.delete(evento) }
     }
-
-    // Consultas filtradas
-    fun eventosPorCurso(cursoId: Int) = repository.getByCursoId(cursoId)
-    fun eventosPorDia(dia: String) = repository.getByDia(dia)
-
-    suspend fun obtenerPorId(id: Int) = repository.getById(id)
 }

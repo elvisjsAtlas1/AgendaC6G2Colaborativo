@@ -38,6 +38,8 @@ import com.example.agendaencarta2004v3.core.database.AppDatabase
 import com.example.agendaencarta2004v3.core.ui.MainScaffold
 import com.example.agendaencarta2004v3.inicio.ui.InicioScreen
 import com.example.agendaencarta2004v3.resumen.ui.ResumenScreen
+import com.example.agendaencarta2004v3.resumen.viewmodel.ResumenViewModel
+import com.example.agendaencarta2004v3.resumen.viewmodel.ResumenViewModelFactory
 
 @Composable
 fun AppNavigation() {
@@ -90,16 +92,26 @@ fun AppNavigation() {
                     )
                 }
 
-                composable(Screen.Inicio.route) { InicioScreen() }
+                composable(Screen.Inicio.route) {
+                    val context = LocalContext.current
+                    val application = context.applicationContext as Application
+
+                    val actividadFactory = remember { ActividadViewModelFactory(application) }
+                    val actividadViewModel: ActividadViewModel = viewModel(factory = actividadFactory)
+
+                    InicioScreen(
+                        actividadViewModel = actividadViewModel   // ← pásalo a la pantalla
+                    )
+                }
 
                 composable(Screen.Agenda.route) {
                     val context = LocalContext.current
                     val application = context.applicationContext as Application
 
                     val agendaFactory = remember { EventoViewModelFactory(application) }
-                    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
-
                     val agendaViewModel: EventoViewModel = viewModel(factory = agendaFactory)
+
+                    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
                     val bibliotecaViewModel: BibliotecaViewModel = viewModel(factory = bibliotecaFactory)
 
                     AgendaScreen(
@@ -134,7 +146,15 @@ fun AppNavigation() {
                     )
                 }
 
-                composable(Screen.Resumen.route) { ResumenScreen() }
+                composable(Screen.Resumen.route) {
+                    val context = LocalContext.current
+                    val application = context.applicationContext as Application
+
+                    val resumenFactory = remember { ResumenViewModelFactory(application) }
+                    val resumenViewModel: ResumenViewModel = viewModel(factory = resumenFactory)
+
+                    ResumenScreen(resumenViewModel = resumenViewModel)
+                }
             }
         }
     }
