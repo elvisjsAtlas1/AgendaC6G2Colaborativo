@@ -8,7 +8,9 @@ import androidx.room.PrimaryKey
 data class ActividadEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val descripcion: String,
-    val cursoId: Int, // Relación con CursoEntity
-    val fechaEntrega: Long, // Guardamos como timestamp
-    val hecho: Boolean = false // Estado por defecto
+    val cursoId: Int,           // Relación con CursoEntity
+    val fechaEntrega: Long,     // Timestamp FECHA+HORA
+    val hecho: Boolean = false, // Estado por defecto
+    // NUEVO: minutos de anticipación (null = sin recordatorio)
+    val avisoMinAntes: Int? = null
 )

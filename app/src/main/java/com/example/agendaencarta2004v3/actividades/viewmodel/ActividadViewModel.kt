@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.agendaencarta2004v3.actividades.entity.ActividadEntity
+import com.example.agendaencarta2004v3.actividades.reminder.ReminderScheduler
 import com.example.agendaencarta2004v3.actividades.repository.ActividadRepository
 import com.example.agendaencarta2004v3.biblioteca.repository.CursoRepository
 import com.example.agendaencarta2004v3.core.voice.VoiceParserMillis
@@ -20,7 +21,8 @@ import java.util.*
 
 class ActividadViewModel(
     private val actividadRepo: ActividadRepository,
-    private val cursoRepository: CursoRepository
+    private val cursoRepository: CursoRepository,
+    private val reminderScheduler: ReminderScheduler             // ← NUEVO
 ) : ViewModel() {
 
     // --- FEEDBACK VOZ ---
@@ -30,41 +32,51 @@ class ActividadViewModel(
     // --- LISTA PARA UI ---
     val actividades: StateFlow<List<ActividadEntity>> =
         actividadRepo.getAllActividades()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // --- AGREGAR ---
-    fun addActividad(descripcion: String, cursoId: Int, fechaEntregaMillis: Long) {
+    // --- AGREGAR (ahora con avisoMinAntes) ---
+    fun addActividad(
+        descripcion: String,
+        cursoId: Int,
+        fechaEntregaMillis: Long,
+        avisoMinAntes: Int?
+    ) {
         viewModelScope.launch {
-            actividadRepo.insertActividad(
-                ActividadEntity(
-                    descripcion = descripcion,
-                    cursoId = cursoId,
-                    fechaEntrega = fechaEntregaMillis,
-                    hecho = false
-                )
+            val entidad = ActividadEntity(
+                descripcion = descripcion,
+                cursoId = cursoId,
+                fechaEntrega = fechaEntregaMillis,
+                hecho = false,
+                avisoMinAntes = avisoMinAntes
             )
+            // Inserta y obtén ID autogenerado (ajusta tu DAO para devolver Long si no lo hace)
+            val id = actividadRepo.insertActividadReturningId(entidad)  // <-- crea este método (o recupera de otra forma)
+            val saved = entidad.copy(id = id.toInt())
+            if (saved.avisoMinAntes != null) {
+                reminderScheduler.schedule(saved)
+            }
         }
     }
 
     // --- MARCAR HECHO / DESHECHO ---
     fun toggleActividad(actividad: ActividadEntity, hecho: Boolean) {
         viewModelScope.launch {
-            actividadRepo.updateActividad(actividad.copy(hecho = hecho))
+            val updated = actividad.copy(hecho = hecho)
+            actividadRepo.updateActividad(updated)
+            if (hecho) reminderScheduler.cancel(updated.id) else {
+                if (updated.avisoMinAntes != null) reminderScheduler.schedule(updated)
+            }
         }
     }
 
-    // --- ELIMINAR (usado por el swipe) ---
     fun deleteActividad(actividad: ActividadEntity) {
         viewModelScope.launch {
+            reminderScheduler.cancel(actividad.id)
             actividadRepo.deleteActividad(actividad)
         }
     }
 
-    // --- VOZ ---
+    // --- VOZ (opcional: sin recordatorio por defecto) ---
     fun handleVoiceCommand(spokenText: String) {
         viewModelScope.launch {
             _ultimoTextoReconocido.value = "Procesando: $spokenText"
@@ -83,32 +95,44 @@ class ActividadViewModel(
             val fechaMillis = parsed.fechaEntregaMillis
 
             if (cursoId != null && fechaMillis != null) {
-                actividadRepo.insertActividad(
-                    ActividadEntity(
-                        descripcion = parsed.descripcion,
-                        cursoId = cursoId,
-                        fechaEntrega = fechaMillis,
-                        hecho = false
-                    )
+                // ✅ usa tu addActividad que ya agenda/cancela recordatorios
+                addActividad(
+                    descripcion = parsed.descripcion,
+                    cursoId = cursoId,
+                    fechaEntregaMillis = fechaMillis,
+                    avisoMinAntes = parsed.avisoMinAntes    // ← puede ser null
                 )
 
-                val fechaTxt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    .format(Date(fechaMillis))
+                val fechaTxt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(fechaMillis))
                 val cursoNombre = cursosBD.firstOrNull { it.id == cursoId }?.nombre ?: "Curso"
+                val avisoTxt = parsed.avisoMinAntes?.let { " | Aviso: ${humanizeMinutes(it)} antes" } ?: ""
 
                 _ultimoTextoReconocido.value =
-                    "✅ Guardado\nCurso: $cursoNombre\nFecha: $fechaTxt\nDesc: ${parsed.descripcion}"
+                    "✅ Guardado\nCurso: $cursoNombre\nFecha/Hora: $fechaTxt$avisoTxt\nDesc: ${parsed.descripcion}"
             } else {
                 val faltantes = buildList {
                     if (cursoId == null) add("curso")
-                    if (fechaMillis == null) add("fecha")
+                    if (fechaMillis == null) add("fecha/hora")
                 }.joinToString(" y ")
                 _ultimoTextoReconocido.value =
                     "⚠️ No pude registrar por falta de $faltantes.\nDetectado: ${parsed.descripcion}"
             }
         }
     }
+
+    /** Convierte minutos a texto amigable: 2880 -> "2 días", 120 -> "2 horas", 15 -> "15 min" */
+    private fun humanizeMinutes(mins: Int): String = when {
+        mins % (24 * 60) == 0 -> {
+            val d = mins / (24 * 60); if (d == 1) "1 día" else "$d días"
+        }
+        mins % 60 == 0 -> {
+            val h = mins / 60; if (h == 1) "1 hora" else "$h horas"
+        }
+        else -> "$mins min"
+    }
 }
+
 /*
 // 🛠️ Código de depuración para ver la lista de actividades y operaciones en la base de datos
 val actividades: StateFlow<List<ActividadEntity>> =

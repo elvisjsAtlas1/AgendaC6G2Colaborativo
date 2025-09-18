@@ -2,6 +2,8 @@ package com.example.agendaencarta2004v3.core.navigation
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,22 +43,31 @@ import com.example.agendaencarta2004v3.resumen.ui.ResumenScreen
 import com.example.agendaencarta2004v3.resumen.viewmodel.ResumenViewModel
 import com.example.agendaencarta2004v3.resumen.viewmodel.ResumenViewModelFactory
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     val context = LocalContext.current
+    val application = context.applicationContext as Application
+
     var showOnBoarding by remember { mutableStateOf(true) }
 
-    // ⚡ Leer preferencia guardada
+    // ⚡ Cargar preferencia de Onboarding una vez
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
         showOnBoarding = !prefs.getBoolean("onboarding_done", false)
     }
 
+    // ───────── Factories creados UNA sola vez ─────────
+    val actividadFactory = remember { ActividadViewModelFactory(application) }
+    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
+    val agendaFactory     = remember { EventoViewModelFactory(application) }
+    val resumenFactory    = remember { ResumenViewModelFactory(application) }
+
     MainScaffold(navController, drawerState) {
-        // 🎨 Fondo global para TODA la app
+        // 🎨 Fondo global
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,20 +82,17 @@ fun AppNavigation() {
                 )
         ) {
             NavHost(
-                navController,
-                startDestination = if (showOnBoarding) "onboarding" else Screen.Inicio.route
+                navController = navController,
+                startDestination = if (showOnBoarding) Screen.Onboarding.route else Screen.Inicio.route
             ) {
-                // 👉 Ruta OnBoarding
+                // 👉 Onboarding
                 composable(Screen.Onboarding.route) {
-                    val context = LocalContext.current
                     OnboardingScreen(
                         navController = navController,
                         onFinish = {
-                            // Guardar que ya lo vio
                             val prefs = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
                             prefs.edit().putBoolean("onboarding_done", true).apply()
 
-                            // Ir a Inicio y quitar onboarding del backstack
                             navController.navigate(Screen.Inicio.route) {
                                 popUpTo(Screen.Onboarding.route) { inclusive = true }
                             }
@@ -92,26 +100,17 @@ fun AppNavigation() {
                     )
                 }
 
+                // 👉 Inicio (usa ActividadViewModel)
                 composable(Screen.Inicio.route) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as Application
-
-                    val actividadFactory = remember { ActividadViewModelFactory(application) }
                     val actividadViewModel: ActividadViewModel = viewModel(factory = actividadFactory)
-
                     InicioScreen(
-                        actividadViewModel = actividadViewModel   // ← pásalo a la pantalla
+                        actividadViewModel = actividadViewModel
                     )
                 }
 
+                // 👉 Agenda (Evento + Biblioteca)
                 composable(Screen.Agenda.route) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as Application
-
-                    val agendaFactory = remember { EventoViewModelFactory(application) }
                     val agendaViewModel: EventoViewModel = viewModel(factory = agendaFactory)
-
-                    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
                     val bibliotecaViewModel: BibliotecaViewModel = viewModel(factory = bibliotecaFactory)
 
                     AgendaScreen(
@@ -120,23 +119,14 @@ fun AppNavigation() {
                     )
                 }
 
+                // 👉 Biblioteca
                 composable(Screen.Biblioteca.route) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as Application
-
-                    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
                     val bibliotecaViewModel: BibliotecaViewModel = viewModel(factory = bibliotecaFactory)
-
                     BibliotecaScreen(bibliotecaViewModel = bibliotecaViewModel)
                 }
 
+                // 👉 Actividades (Actividades + Biblioteca)
                 composable(Screen.Actividades.route) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as Application
-
-                    val actividadFactory = remember { ActividadViewModelFactory(application) }
-                    val bibliotecaFactory = remember { BibliotecaViewModelFactory(application) }
-
                     val actividadViewModel: ActividadViewModel = viewModel(factory = actividadFactory)
                     val bibliotecaViewModel: BibliotecaViewModel = viewModel(factory = bibliotecaFactory)
 
@@ -146,13 +136,9 @@ fun AppNavigation() {
                     )
                 }
 
+                // 👉 Resumen
                 composable(Screen.Resumen.route) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as Application
-
-                    val resumenFactory = remember { ResumenViewModelFactory(application) }
                     val resumenViewModel: ResumenViewModel = viewModel(factory = resumenFactory)
-
                     ResumenScreen(resumenViewModel = resumenViewModel)
                 }
             }

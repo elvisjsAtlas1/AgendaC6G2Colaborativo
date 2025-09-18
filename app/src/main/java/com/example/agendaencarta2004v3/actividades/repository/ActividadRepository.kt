@@ -8,14 +8,13 @@ import kotlinx.coroutines.flow.Flow
 class ActividadRepository(private val dao: ActividadDao) {
     fun getAllActividades(): Flow<List<ActividadEntity>> = dao.getAllActividades()
 
-    suspend fun insertActividad(actividad: ActividadEntity) {
-        Log.d("ActividadRepository", "Insertando actividad: $actividad")
+    suspend fun insertActividadReturningId(actividad: ActividadEntity): Long =
         dao.insertActividad(actividad)
-    }
 
     suspend fun updateActividad(actividad: ActividadEntity) {
         Log.d("ActividadRepository", "Actualizando actividad: $actividad")
         dao.updateActividad(actividad)
     }
+
     suspend fun deleteActividad(actividad: ActividadEntity) = dao.deleteActividad(actividad)
 }

@@ -8,9 +8,11 @@ import kotlinx.coroutines.flow.Flow
 interface ActividadDao {
     @Query("SELECT * FROM actividades")
     fun getAllActividades(): Flow<List<ActividadEntity>>
+    @Query("SELECT * FROM actividades")
+    suspend fun getAllOnce(): List<ActividadEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertActividad(actividad: ActividadEntity)
+    suspend fun insertActividad(actividad: ActividadEntity): Long   // ← antes no devolvía nada
 
     @Update
     suspend fun updateActividad(actividad: ActividadEntity)
