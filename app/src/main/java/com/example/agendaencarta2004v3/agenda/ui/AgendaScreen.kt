@@ -253,7 +253,7 @@ fun TablaEventos(
     dayWidth: Dp = 140.dp
 ) {
     val eventos by agendaViewModel.eventos.collectAsState()
-
+    var detalleEvento by remember { mutableStateOf<EventoEntity?>(null) }
     val cs = MaterialTheme.colorScheme
     val outline = cs.outlineVariant // líneas/contornos sutiles
     val surface = cs.surface       // tarjetas / columnas
@@ -415,8 +415,8 @@ fun TablaEventos(
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(cs.primary)                 // ⬅️ color principal
                                         .combinedClickable(
-                                            onClick = { editarEvento = e },
-                                            onLongClick = { confirmarEliminar = e }
+                                            onClick = { detalleEvento = e },   // abre el diálogo de detalle con Editar / Eliminar
+                                            onLongClick = { editarEvento = e } // (opcional) long-press para ir directo a Editar
                                         )
                                         .border(1.dp, cs.primary.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
                                         .padding(8.dp)
@@ -476,6 +476,21 @@ fun TablaEventos(
                 val e = confirmarEliminar!!
                 val cursoNombre = cursosDisponibles.firstOrNull { it.id == e.cursoId }?.nombre ?: "Curso"
                 Text("¿Eliminar $cursoNombre (${e.dia} ${e.horaInicio}-${e.horaFin})?")
+            }
+        )
+    }
+    if (detalleEvento != null) {
+        EventDetailDialog(
+            evento = detalleEvento!!,
+            cursosDisponibles = cursosDisponibles,
+            onDismiss = { detalleEvento = null },
+            onEdit = { e ->
+                detalleEvento = null
+                editarEvento = e
+            },
+            onDelete = { e ->
+                detalleEvento = null
+                confirmarEliminar = e
             }
         )
     }
@@ -569,5 +584,41 @@ fun EditarEventoDialog(
         }
     )
 }
-
+@Composable
+private fun EventDetailDialog(
+    evento: EventoEntity,
+    cursosDisponibles: List<CursoEntity>,
+    onDismiss: () -> Unit,
+    onEdit: (EventoEntity) -> Unit,
+    onDelete: (EventoEntity) -> Unit
+) {
+    val cs = MaterialTheme.colorScheme
+    val cursoNombre = remember(cursosDisponibles, evento.cursoId) {
+        cursosDisponibles.firstOrNull { it.id == evento.cursoId }?.nombre ?: "Curso"
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { onDelete(evento) }) { Text("Eliminar", color = cs.error) }
+                TextButton(onClick = { onEdit(evento) }) { Text("Editar") }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
+        title = { Text(cursoNombre) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("${evento.dia}  ${evento.horaInicio} - ${evento.horaFin}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = cs.onSurfaceVariant
+                )
+                if (evento.aula.isNotBlank()) {
+                    Text("Aula: ${evento.aula}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    )
+}
 

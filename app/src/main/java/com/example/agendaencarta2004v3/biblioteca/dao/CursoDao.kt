@@ -16,4 +16,12 @@ interface CursoDao {
 
     @Query("SELECT * FROM cursos WHERE nombre LIKE :q")
     suspend fun searchByName(q: String): List<CursoEntity>
+
+    // --- ELIMINAR ---
+    @Delete
+    suspend fun deleteCurso(curso: CursoEntity): Int
+
+    @Query("DELETE FROM cursos WHERE id = :cursoId")
+    suspend fun deleteCursoById(cursoId: Int): Int
+
 }

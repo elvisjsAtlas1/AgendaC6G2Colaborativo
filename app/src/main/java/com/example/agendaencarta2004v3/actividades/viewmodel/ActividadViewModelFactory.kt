@@ -18,12 +18,12 @@ class ActividadViewModelFactory(
             val db = AppDatabase.getDatabase(application)
             val actividadRepo = ActividadRepository(db.actividadDao())
             val cursoRepo = CursoRepository(db.cursoDao())
-            val scheduler = ReminderScheduler(application) // ⬅️ AÑADIDO
+            val scheduler = ReminderScheduler(application)
 
             return ActividadViewModel(
                 actividadRepo = actividadRepo,
                 cursoRepository = cursoRepo,
-                reminderScheduler = scheduler          // ⬅️ pásalo
+                reminderScheduler = scheduler
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

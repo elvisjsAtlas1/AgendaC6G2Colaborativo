@@ -11,9 +11,15 @@ import com.example.agendaencarta2004v3.agenda.entity.EventoEntity
 
 import com.example.agendaencarta2004v3.biblioteca.dao.CursoDao
 import com.example.agendaencarta2004v3.biblioteca.dao.MaterialDao
+import com.example.agendaencarta2004v3.biblioteca.dao.MaterialDocDao
+import com.example.agendaencarta2004v3.biblioteca.dao.MaterialImgDao
+import com.example.agendaencarta2004v3.biblioteca.dao.MaterialLinkDao
 import com.example.agendaencarta2004v3.biblioteca.dao.SemanaDao
 import com.example.agendaencarta2004v3.biblioteca.entity.CursoEntity
+import com.example.agendaencarta2004v3.biblioteca.entity.MaterialDocEntity
 import com.example.agendaencarta2004v3.biblioteca.entity.MaterialEntity
+import com.example.agendaencarta2004v3.biblioteca.entity.MaterialImgEntity
+import com.example.agendaencarta2004v3.biblioteca.entity.MaterialLinkEntity
 import com.example.agendaencarta2004v3.biblioteca.entity.SemanaEntity
 
 
@@ -23,9 +29,12 @@ import com.example.agendaencarta2004v3.biblioteca.entity.SemanaEntity
         CursoEntity::class,
         SemanaEntity::class,
         MaterialEntity::class,
-        ActividadEntity::class
+        ActividadEntity::class ,
+        MaterialDocEntity::class,
+        MaterialImgEntity::class,
+        MaterialLinkEntity::class
     ],
-    version = 14,
+    version = 19,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +44,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun semanaDao(): SemanaDao
     abstract fun materialDao(): MaterialDao
     abstract fun actividadDao(): ActividadDao
+
+    // ✅ nuevos
+    abstract fun materialDocDao(): MaterialDocDao
+    abstract fun materialImgDao(): MaterialImgDao
+    abstract fun materialLinkDao(): MaterialLinkDao
 
     companion object {
         @Volatile

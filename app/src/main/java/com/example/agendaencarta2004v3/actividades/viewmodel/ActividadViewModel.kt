@@ -95,7 +95,7 @@ class ActividadViewModel(
             val fechaMillis = parsed.fechaEntregaMillis
 
             if (cursoId != null && fechaMillis != null) {
-                // ✅ usa tu addActividad que ya agenda/cancela recordatorios
+                //  usa tu addActividad que ya agenda/cancela recordatorios
                 addActividad(
                     descripcion = parsed.descripcion,
                     cursoId = cursoId,

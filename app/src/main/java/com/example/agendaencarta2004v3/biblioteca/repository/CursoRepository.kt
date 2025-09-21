@@ -16,4 +16,12 @@ class CursoRepository(private val cursoDao: CursoDao) {
     suspend fun insertCurso(curso: CursoEntity) {
         cursoDao.insertCurso(curso)
     }
+
+    // --- ELIMINAR ---
+    suspend fun deleteCurso(curso: CursoEntity): Int =
+        cursoDao.deleteCurso(curso)
+
+    suspend fun deleteCursoById(cursoId: Int): Int =
+        cursoDao.deleteCursoById(cursoId)
+
 }

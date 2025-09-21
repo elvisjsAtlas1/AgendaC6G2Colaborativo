@@ -9,15 +9,29 @@ import com.example.agendaencarta2004v3.biblioteca.repository.SemanaRepository
 import com.example.agendaencarta2004v3.core.database.AppDatabase
 
 
-class BibliotecaViewModelFactory(private val application: Application) :
-    ViewModelProvider.Factory {
+class BibliotecaViewModelFactory(
+    private val application: Application
+) : ViewModelProvider.Factory {
+
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val database = AppDatabase.getDatabase(application)
+        if (modelClass.isAssignableFrom(BibliotecaViewModel::class.java)) {
+            val db = AppDatabase.getDatabase(application)
+            val cursoRepository = CursoRepository(db.cursoDao())
+            val semanaRepository = SemanaRepository(db.semanaDao())
+            val materialRepository = MaterialRepository(
+                materialDao = db.materialDao(),
+                docDao = db.materialDocDao(),
+                imgDao = db.materialImgDao(),
+                linkDao = db.materialLinkDao()
+            )
 
-        val cursoRepository = CursoRepository(database.cursoDao())
-        val semanaRepository = SemanaRepository(database.semanaDao())
-        val materialRepository = MaterialRepository(database.materialDao())
-
-        return BibliotecaViewModel(cursoRepository, semanaRepository, materialRepository) as T
+            @Suppress("UNCHECKED_CAST")
+            return BibliotecaViewModel(
+                cursoRepository,
+                semanaRepository,
+                materialRepository
+            ) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

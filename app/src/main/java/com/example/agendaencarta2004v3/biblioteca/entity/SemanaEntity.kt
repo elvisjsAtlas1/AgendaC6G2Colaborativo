@@ -4,6 +4,7 @@ package com.example.agendaencarta2004v3.biblioteca.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -15,7 +16,8 @@ import androidx.room.PrimaryKey
             childColumns = ["cursoId"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index("cursoId")] // rendimiento en joins/borrrado en cascada
 )
 data class SemanaEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,

@@ -14,4 +14,15 @@ interface SemanaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSemana(semana: SemanaEntity)
+
+    // --- ELIMINAR ---
+    @Delete
+    suspend fun deleteSemana(semana: SemanaEntity): Int
+
+    @Query("DELETE FROM semanas WHERE id = :semanaId")
+    suspend fun deleteSemanaById(semanaId: Int): Int
+
+    // (Opcional) por si quisieras borrar todas las semanas de un curso sin tocar el curso
+    @Query("DELETE FROM semanas WHERE cursoId = :cursoId")
+    suspend fun deleteSemanasByCursoId(cursoId: Int): Int
 }

@@ -14,4 +14,15 @@ class SemanaRepository(private val semanaDao: SemanaDao) {
     suspend fun insertSemana(semana: SemanaEntity) {
         semanaDao.insertSemana(semana)
     }
+
+    // --- ELIMINAR ---
+    suspend fun deleteSemana(semana: SemanaEntity): Int =
+        semanaDao.deleteSemana(semana)
+
+    suspend fun deleteSemanaById(semanaId: Int): Int =
+        semanaDao.deleteSemanaById(semanaId)
+
+    // Opcional
+    suspend fun deleteSemanasByCursoId(cursoId: Int): Int =
+        semanaDao.deleteSemanasByCursoId(cursoId)
 }

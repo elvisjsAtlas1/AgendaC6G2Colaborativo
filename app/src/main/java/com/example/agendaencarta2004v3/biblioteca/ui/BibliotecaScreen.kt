@@ -3,7 +3,11 @@ package com.example.agendaencarta2004v3.biblioteca.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.layout.FlowRow
 import android.provider.OpenableColumns
+
+
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +17,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +40,10 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.CalendarViewWeek
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -77,16 +87,33 @@ import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModel
 import com.example.agendaencarta2004v3.biblioteca.viewmodel.BibliotecaViewModelFactory
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.launch
 
+/* ===================== BibliotecaScreen ===================== */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,34 +122,44 @@ fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
     val cursos by bibliotecaViewModel.cursos.collectAsState()
     var showForm by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Biblioteca") }
-                // 👇 sin acciones
+                title = { Text("Biblioteca") },
+                actions = {
+                    // Botón en la barra superior (derecha) alineado con el título
+                    FilledTonalButton(
+                        onClick = { showForm = !showForm },
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        shape = MaterialTheme.shapes.extraLarge
+                    ) {
+                        Icon(Icons.Outlined.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (showForm) "Ocultar" else "Añadir curso")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        // ❌ sin floatingActionButton
     ) { inner ->
         Surface(
             color = MaterialTheme.colorScheme.background,
-            modifier = Modifier.fillMaxSize().padding(inner)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(inner)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                // ---- Botón compacto para desplegar el formulario de CURSO ----
-                FilledTonalButton(
-                    onClick = { showForm = !showForm },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (showForm) "Ocultar formulario" else "Añadir curso")
-                }
-
-                // ---- Formulario de curso (colapsable) ----
+                // Formulario de curso (colapsable)
                 AnimatedVisibility(visible = showForm) {
                     ElevatedCard(
                         colors = CardDefaults.elevatedCardColors(
@@ -130,7 +167,9 @@ fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
                         )
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Row(
@@ -150,6 +189,9 @@ fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
                                             bibliotecaViewModel.agregarCurso(nombreCurso.trim())
                                             nombreCurso = ""
                                             showForm = false
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Curso agregado")
+                                            }
                                         }
                                     }
                                 ) {
@@ -162,7 +204,7 @@ fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
                     }
                 }
 
-                // ---- Lista de cursos ----
+                // Lista de cursos (swipe-to-delete)
                 if (cursos.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Aún no has agregado cursos.")
@@ -170,82 +212,14 @@ fun BibliotecaScreen(bibliotecaViewModel: BibliotecaViewModel) {
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(cursos, key = { it.id }) { curso ->
-                            CursoItem(curso, bibliotecaViewModel)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun CursoItem(curso: CursoEntity, viewModel: BibliotecaViewModel) {
-    var expanded by remember { mutableStateOf(false) }
-    var showForm by remember { mutableStateOf(false) }
-    var nombreSemana by remember { mutableStateOf("") }
-    val semanas by viewModel.getSemanasByCurso(curso.id).collectAsState(initial = emptyList())
-
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-
-            // Header del curso
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("📚 ${curso.nombre}",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 12.dp)) {
-
-                    // Botón compacto para desplegar form de SEMANA
-                    FilledTonalButton(
-                        onClick = { showForm = !showForm },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (showForm) "Ocultar formulario" else "Añadir semana")
-                    }
-
-                    // Form de semana (colapsable)
-                    AnimatedVisibility(visible = showForm) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = nombreSemana,
-                                onValueChange = { nombreSemana = it },
-                                label = { Text("Nombre de la semana") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Button(onClick = {
-                                if (nombreSemana.isNotBlank()) {
-                                    viewModel.agregarSemana(curso.id, nombreSemana.trim())
-                                    nombreSemana = ""
-                                    showForm = false
+                            CursoItemSwipe(
+                                curso = curso,
+                                viewModel = bibliotecaViewModel,
+                                onSnack = { msg ->
+                                    scope.launch { snackbarHostState.showSnackbar(msg) }
                                 }
-                            }) { Text("Guardar") }
+                            )
                         }
-                    }
-
-                    // Lista de semanas
-                    semanas.forEach { semana ->
-                        SemanaItem(semana, viewModel)
                     }
                 }
             }
@@ -254,344 +228,751 @@ fun CursoItem(curso: CursoEntity, viewModel: BibliotecaViewModel) {
 }
 
 @Composable
-fun MaterialCard(
-    material: MaterialEntity,
-    onOpen: (Uri, String) -> Unit,
-    onOpenUrl: (String) -> Unit
+private fun FlatCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     ElevatedCard(
+        modifier = modifier,
+        shape = RectangleShape,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.background, // mismo negro del fondo
+            contentColor = MaterialTheme.colorScheme.onBackground,
+        ),
+        elevation = CardDefaults.elevatedCardElevation( // sin sombras
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            focusedElevation = 0.dp,
+            hoveredElevation = 0.dp,
+            draggedElevation = 0.dp,
+            disabledElevation = 0.dp
         )
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.PushPin, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(material.info, style = MaterialTheme.typography.bodyLarge)
-            }
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            content = content
+        )
+    }
+}
 
-            material.uriDoc?.let { str ->
-                val uri = Uri.parse(str)
+/* ===================== Curso (swipe-to-delete) ===================== */
+
+@Composable
+private fun CursoItemSwipe(
+    curso: CursoEntity,
+    viewModel: BibliotecaViewModel,
+    onSnack: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var askConfirm by remember { mutableStateOf(false) }
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { target ->
+            when (target) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    // En lugar de eliminar directo, mostramos confirmación y cancelamos el swipe
+                    askConfirm = true
+                    false
+                }
+                else -> false
+            }
+        }
+    )
+
+    // Dialogo confirmación
+    ConfirmDeleteDialog(
+        open = askConfirm,
+        title = "Eliminar curso",
+        message = "¿Seguro que quieres eliminar \"${curso.nombre}\" y sus semanas/materiales?",
+        onConfirm = {
+            viewModel.eliminarCursoById(curso.id) { ok ->
+                onSnack(if (ok) "Curso eliminado" else "No se pudo eliminar")
+            }
+        },
+        onDismiss = { askConfirm = false }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            val bg = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+            Box(
+                Modifier.fillMaxSize().background(bg).padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) { Icon(Icons.Outlined.Delete, null) }
+        },
+        content = {
+            FlatCard {
                 Row(
-                    modifier = Modifier.fillMaxWidth().clickable { onOpen(uri, "application/*") }.padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Outlined.InsertDriveFile, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(uri.lastPathSegment ?: "Documento", color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "📚 ${curso.nombre}",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f).clickable { expanded = !expanded },
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                            null
+                        )
+                    }
                 }
-            }
 
-            material.uriImg?.let { str ->
-                val uri = Uri.parse(str)
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable { onOpen(uri, "image/*") }.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Outlined.Image, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(uri.lastPathSegment ?: "Imagen", color = MaterialTheme.colorScheme.primary)
+                AnimatedVisibility(visible = expanded) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(top = 12.dp)
+                    ) {
+                        SemanasList(
+                            cursoId = curso.id,
+                            viewModel = viewModel,
+                            onSnack = onSnack
+                        )
+                    }
                 }
             }
+        }
+    )
+}
 
-            material.url?.let { link ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable { onOpenUrl(link) }.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Outlined.Link, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(link, color = MaterialTheme.colorScheme.primary)
+/* ===================== Semanas (con swipe-to-delete) ===================== */
+
+@Composable
+private fun SemanasList(
+    cursoId: Int,
+    viewModel: BibliotecaViewModel,
+    onSnack: (String) -> Unit
+) {
+    var showForm by remember { mutableStateOf(false) }
+    var nombreSemana by remember { mutableStateOf("") }
+    val semanas by viewModel.getSemanasByCurso(cursoId).collectAsState(initial = emptyList())
+
+    FilledTonalButton(onClick = { showForm = !showForm }, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp))
+        Text(if (showForm) "Ocultar formulario" else "Añadir semana")
+    }
+
+    AnimatedVisibility(visible = showForm) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = nombreSemana,
+                onValueChange = { nombreSemana = it },
+                label = { Text("Nombre de la semana") },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = {
+                if (nombreSemana.isNotBlank()) {
+                    viewModel.agregarSemana(cursoId, nombreSemana.trim())
+                    nombreSemana = ""
+                    showForm = false
+                    onSnack("Semana agregada")
                 }
-            }
+            }) { Text("Guardar") }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        semanas.forEach { semana ->
+            SemanaItemSwipe(semana, viewModel, onSnack)
         }
     }
 }
 
+/* ===================== Semana (swipe-to-delete) ===================== */
+
 @Composable
-fun SemanaItem(semana: SemanaEntity, viewModel: BibliotecaViewModel) {
-    val context = LocalContext.current
+private fun SemanaItemSwipe(
+    semana: SemanaEntity,
+    viewModel: BibliotecaViewModel,
+    onSnack: (String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
+    var askConfirm by remember { mutableStateOf(false) }
 
-    // Form material (colapsable)
-    var showFormMat by remember { mutableStateOf(false) }
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { target ->
+            when (target) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    askConfirm = true
+                    false
+                }
+                else -> false
+            }
+        }
+    )
+
+    ConfirmDeleteDialog(
+        open = askConfirm,
+        title = "Eliminar semana",
+        message = "¿Seguro que quieres eliminar \"${semana.titulo}\" y sus materiales?",
+        onConfirm = {
+            viewModel.eliminarSemanaById(semana.id) { ok ->
+                onSnack(if (ok) "Semana eliminada" else "No se pudo eliminar")
+            }
+        },
+        onDismiss = { askConfirm = false }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            val bg = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+            Box(
+                Modifier.fillMaxSize().background(bg).padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) { Icon(Icons.Outlined.Delete, null) }
+        },
+        content = {
+            FlatCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.CalendarViewWeek, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        semana.titulo,
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f).clickable { expanded = !expanded },
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                            null
+                        )
+                    }
+                }
+
+                AnimatedVisibility(visible = expanded) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(top = 12.dp)
+                    ) {
+                        MaterialesList(
+                            semanaId = semana.id,
+                            viewModel = viewModel,
+                            onSnack = onSnack
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+
+/* ===================== Materiales (swipe-to-delete) ===================== */
+
+@Composable
+private fun MaterialesList(
+    semanaId: Int,
+    viewModel: BibliotecaViewModel,
+    onSnack: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val material by viewModel.observeMaterialBySemana(semanaId).collectAsState(initial = null)
+
+    var showDialog by remember { mutableStateOf(false) }
+
+    FilledTonalButton(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp))
+        Text("Agregar material")
+    }
+
+    // Diálogo único para agregar info + varios docs/imgs/enlaces
+    if (showDialog) {
+        CrearMaterialDialog(
+            onDismiss = { showDialog = false },
+            onSave = { info, docs, imgs, links ->
+                viewModel.guardarMaterialDesdeDialogo(
+                    semanaId = semanaId,
+                    info = info,
+                    docs = docs,
+                    imgs = imgs,
+                    links = links,
+                    onDone = {
+                        onSnack("Material guardado")
+                        showDialog = false
+                    },
+                    onError = { msg -> onSnack(msg) }
+                )
+            }
+        )
+    }
+
+    Spacer(Modifier.height(8.dp))
+
+    if (material == null) {
+        Text("Sin materiales.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    } else {
+        MaterialSectionSingle(material = material!!, viewModel = viewModel, onSnack = onSnack, context = context)
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CrearMaterialDialog(
+    onDismiss: () -> Unit,
+    onSave: (info: String?, docs: List<String>, imgs: List<String>, links: List<String>) -> Unit
+) {
     var info by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
-    var uriDoc by remember { mutableStateOf<Uri?>(null) }
-    var uriImg by remember { mutableStateOf<Uri?>(null) }
 
-    val materiales by viewModel.getMaterialesBySemana(semana.id)
-        .collectAsState(initial = emptyList())
+    val docs = remember { mutableStateListOf<String>() }
+    val imgs = remember { mutableStateListOf<String>() }
+    val links = remember { mutableStateListOf<String>() }
+    var linkText by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
-    // Launchers uniformes
+    // pickers múltiples
     val docPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri -> uriDoc = uri }
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris -> docs.addAll(uris.map { it.toString() }) }
 
     val imgPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri -> uriImg = uri }
+        ActivityResultContracts.GetMultipleContents()
+    ) { uris -> imgs.addAll(uris.map { it.toString() }) }
 
-    val pillHeight = 44.dp
-
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-
-            // Header de semana (expand/collapse)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Outlined.CalendarViewWeek, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    semana.titulo,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Agregar material") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = info,
+                    onValueChange = { info = it },
+                    label = { Text("Información (opcional, única)") },
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Icon(
-                    imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+
+                Text("Documentos:", style = MaterialTheme.typography.titleSmall)
+                OutlinedButton(onClick = { docPicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.AttachFile, null); Spacer(Modifier.width(8.dp)); Text("Añadir documentos")
+                }
+                if (docs.isEmpty()) {
+                    Text("— Ningún documento —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        docs.forEach { s ->
+                            InputChip(
+                                selected = false,
+                                onClick = { },
+                                label = { Text(Uri.parse(s).lastPathSegment ?: "doc") },
+                                trailingIcon = { IconButton(onClick = { docs.remove(s) }) { Icon(Icons.Outlined.Close, null) } }
+                            )
+                        }
+                    }
+                }
+
+                Text("Imágenes:", style = MaterialTheme.typography.titleSmall)
+                OutlinedButton(onClick = { imgPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.Image, null); Spacer(Modifier.width(8.dp)); Text("Añadir imágenes")
+                }
+                if (imgs.isEmpty()) {
+                    Text("— Ninguna imagen —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        imgs.forEach { s ->
+                            InputChip(
+                                selected = false,
+                                onClick = { },
+                                label = { Text(Uri.parse(s).lastPathSegment ?: "img") },
+                                trailingIcon = { IconButton(onClick = { imgs.remove(s) }) { Icon(Icons.Outlined.Close, null) } }
+                            )
+                        }
+                    }
+                }
+
+                Text("Enlaces:", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = linkText,
+                        onValueChange = { linkText = it },
+                        label = { Text("URL (https://...)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedButton(onClick = {
+                        val u = linkText.trim()
+                        if (u.isNotBlank()) { links.add(u); linkText = "" }
+                    }) { Text("Añadir") }
+                }
+                if (links.isEmpty()) {
+                    Text("— Ningún enlace —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        links.forEach { u ->
+                            InputChip(
+                                selected = false,
+                                onClick = { },
+                                label = { Text(u, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                trailingIcon = { IconButton(onClick = { links.remove(u) }) { Icon(Icons.Outlined.Close, null) } }
+                            )
+                        }
+                    }
+                }
+
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val empty = info.isBlank() && docs.isEmpty() && imgs.isEmpty() && links.isEmpty()
+                if (empty) { error = "Agrega información, documento, imagen o enlace"; return@TextButton }
+                onSave(info.ifBlank { null }, docs.toList(), imgs.toList(), links.toList())
+            }) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+/* ===================== Material (swipe-to-delete) ===================== */
+
+@Composable
+private fun SwipeItemRow(
+    state: SwipeToDismissBoxState,
+    leading: @Composable () -> Unit,
+    text: @Composable () -> Unit,
+    onClick: () -> Unit
+) {
+    // Mostrar ícono SOLO mientras se está swippeando o quedó en EndToStart (antes de reset)
+    val showBg = state.dismissDirection != null ||
+            state.currentValue == SwipeToDismissBoxValue.EndToStart ||
+            state.targetValue == SwipeToDismissBoxValue.EndToStart
+
+    SwipeToDismissBox(
+        state = state,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            if (showBg) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
+            } else {
+                Box(Modifier.fillMaxSize())
+            }
+        },
+        content = {
+            // Cubrimos el contenido con el mismo fondo para que nunca “asome” el background
+            Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onClick() }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    leading()
+                    Spacer(Modifier.width(8.dp))
+                    text()
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun ConfirmDeleteDialog(
+    open: Boolean,
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!open) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(); onDismiss() }) { Text("Eliminar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        title = { Text(title) },
+        text = { Text(message) }
+    )
+}
+@Composable
+private fun MaterialSectionSingle(
+    material: MaterialEntity,
+    viewModel: BibliotecaViewModel,
+    onSnack: (String) -> Unit,
+    context: Context
+) {
+    val docs  by viewModel.getDocs(material.id).collectAsState(initial = emptyList())
+    val imgs  by viewModel.getImgs(material.id).collectAsState(initial = emptyList())
+    val links by viewModel.getLinks(material.id).collectAsState(initial = emptyList())
+
+    val scope = rememberCoroutineScope()
+
+    // ==== Estados de confirmación + swipe pendiente por reset ====
+    var askClearInfo by remember { mutableStateOf(false) }
+    var infoPendingState by remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+
+    var askDeleteDocId by remember { mutableStateOf<Int?>(null) }
+    var docPendingState by remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+
+    var askDeleteImgId by remember { mutableStateOf<Int?>(null) }
+    var imgPendingState by remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+
+    var askDeleteLinkId by remember { mutableStateOf<Int?>(null) }
+    var linkPendingState by remember { mutableStateOf<SwipeToDismissBoxState?>(null) }
+
+    fun reset(state: SwipeToDismissBoxState?) = scope.launch {
+        state?.snapTo(SwipeToDismissBoxValue.Settled)
+    }
+
+    FlatCard {
+        // ===== Información (única, swipe para borrar con confirmación) =====
+        Text("Información:", style = MaterialTheme.typography.titleSmall)
+        if (material.info.isNullOrBlank()) {
+            Text("— Sin información —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            val dismissInfo = rememberSwipeToDismissBoxState()
+            // si llega a EndToStart → abrir diálogo y recordar este state para resetear
+            LaunchedEffect(dismissInfo.currentValue) {
+                if (dismissInfo.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                    infoPendingState = dismissInfo
+                    askClearInfo = true
+                }
             }
 
-            AnimatedVisibility(visible = expanded) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(top = 12.dp)
-                ) {
+            // Fondo visible solo durante swipe
+            val showBgInfo = dismissInfo.dismissDirection != null ||
+                    dismissInfo.currentValue == SwipeToDismissBoxValue.EndToStart ||
+                    dismissInfo.targetValue == SwipeToDismissBoxValue.EndToStart
 
-                    // Botón para mostrar/ocultar formulario de Material
-                    FilledTonalButton(
-                        onClick = { showFormMat = !showFormMat },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Outlined.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (showFormMat) "Ocultar formulario" else "Agregar material")
-                    }
-
-                    // -------- Formulario de material (colapsable) --------
-                    AnimatedVisibility(visible = showFormMat) {
-                        ElevatedCard(
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        ) {
-                            Column(
-                                Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                // Descripción
-                                OutlinedTextField(
-                                    value = info,
-                                    onValueChange = { info = it },
-                                    label = { Text("Descripción / Info") },
-                                    leadingIcon = { Icon(Icons.Outlined.Description, null) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-                                // Botones Documento / Imagen (uniformes)
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { docPicker.launch(arrayOf("*/*")) },
-                                        shape = MaterialTheme.shapes.extraLarge,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(pillHeight),
-                                        contentPadding = PaddingValues(horizontal = 16.dp)
-                                    ) {
-                                        Icon(Icons.Outlined.AttachFile, null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Documento", maxLines = 1, softWrap = false)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = { imgPicker.launch("image/*") },
-                                        shape = MaterialTheme.shapes.extraLarge,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(pillHeight),
-                                        contentPadding = PaddingValues(horizontal = 16.dp)
-                                    ) {
-                                        Icon(Icons.Outlined.Image, null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Imagen", maxLines = 1, softWrap = false)
-                                    }
-                                }
-
-                                // Nombres seleccionados (opcional)
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    uriDoc?.let {
-                                        Text(
-                                            "📄 ${it.lastPathSegment ?: "Documento seleccionado"}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    uriImg?.let {
-                                        Text(
-                                            "🖼 ${it.lastPathSegment ?: "Imagen seleccionada"}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                // Enlace
-                                OutlinedTextField(
-                                    value = url,
-                                    onValueChange = { url = it },
-                                    label = { Text("Enlace (opcional)") },
-                                    leadingIcon = { Icon(Icons.Outlined.Link, null) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-                                // Acciones (Cancelar / Guardar) – mismo estilo y altura
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            info = ""; url = ""; uriDoc = null; uriImg = null
-                                            showFormMat = false
-                                        },
-                                        shape = MaterialTheme.shapes.extraLarge,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(pillHeight),
-                                        contentPadding = PaddingValues(horizontal = 16.dp)
-                                    ) {
-                                        Text("Cancelar", maxLines = 1, softWrap = false)
-                                    }
-
-                                    Button(
-                                        onClick = {
-                                            if (info.isNotBlank()) {
-                                                viewModel.agregarMaterial(
-                                                    semanaId = semana.id,
-                                                    info = info.trim(),
-                                                    uriDoc = uriDoc?.toString(),
-                                                    uriImg = uriImg?.toString(),
-                                                    url = url.takeIf { it.isNotBlank() }
-                                                )
-                                                info = ""; url = ""; uriDoc = null; uriImg = null
-                                                showFormMat = false
-                                            }
-                                        },
-                                        shape = MaterialTheme.shapes.extraLarge,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(pillHeight),
-                                        contentPadding = PaddingValues(horizontal = 16.dp)
-                                    ) {
-                                        Icon(Icons.Outlined.Save, contentDescription = null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Guardar", maxLines = 1, softWrap = false)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // -------- Lista de materiales --------
-                    if (materiales.isEmpty()) {
+            SwipeToDismissBox(
+                state = dismissInfo,
+                enableDismissFromStartToEnd = false,
+                backgroundContent = {
+                    if (showBgInfo) {
+                        Box(
+                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                                .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                    } else Box(Modifier.fillMaxSize())
+                },
+                content = {
+                    Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         Text(
-                            "Sin materiales.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = material.info ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                         )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            materiales.forEach { material ->
-                                MaterialCard(
-                                    material = material,
-                                    onOpen = { uri: Uri, mime: String ->
-                                        abrirArchivo(context, uri, mime)
-                                    },
-                                    onOpenUrl = { link: String ->
-                                        try {
-                                            context.startActivity(
-                                                Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                                            )
-                                        } catch (_: Exception) {
-                                            Toast.makeText(
-                                                context,
-                                                "No se puede abrir el enlace",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            }
+                    }
+                }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp)); Divider(modifier = Modifier.alpha(0.15f)); Spacer(Modifier.height(12.dp))
+
+        // ===== Documentos (múltiples) =====
+        Text("Documentos:", style = MaterialTheme.typography.titleSmall)
+        if (docs.isEmpty()) {
+            Text("— Ningún documento —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                docs.forEach { d ->
+                    val dismiss = rememberSwipeToDismissBoxState()
+                    // Al llegar a EndToStart, abrimos confirm y guardamos el state para reset
+                    LaunchedEffect(dismiss.currentValue) {
+                        if (dismiss.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                            docPendingState = dismiss
+                            askDeleteDocId = d.id
                         }
                     }
+                    SwipeItemRow(
+                        state = dismiss,
+                        leading = { Icon(Icons.Outlined.InsertDriveFile, null) },
+                        text = {
+                            Text(
+                                d.name ?: Uri.parse(d.uriDoc).lastPathSegment ?: "Documento",
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        onClick = { abrirArchivo(context, Uri.parse(d.uriDoc), "application/*") }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp)); Divider(modifier = Modifier.alpha(0.15f)); Spacer(Modifier.height(12.dp))
+
+        // ===== Imágenes (múltiples) =====
+        Text("Imágenes:", style = MaterialTheme.typography.titleSmall)
+        if (imgs.isEmpty()) {
+            Text("— Ninguna imagen —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                imgs.forEach { img ->
+                    val dismiss = rememberSwipeToDismissBoxState()
+                    LaunchedEffect(dismiss.currentValue) {
+                        if (dismiss.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                            imgPendingState = dismiss
+                            askDeleteImgId = img.id
+                        }
+                    }
+                    SwipeItemRow(
+                        state = dismiss,
+                        leading = { Icon(Icons.Outlined.Image, null) },
+                        text = {
+                            Text(
+                                Uri.parse(img.uriImg).lastPathSegment ?: "Imagen",
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        onClick = { abrirArchivo(context, Uri.parse(img.uriImg), "image/*") }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp)); Divider(modifier = Modifier.alpha(0.15f)); Spacer(Modifier.height(12.dp))
+
+        // ===== Enlaces (múltiples) =====
+        Text("Enlaces:", style = MaterialTheme.typography.titleSmall)
+        if (links.isEmpty()) {
+            Text("— Ningún enlace —", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                links.forEach { l ->
+                    val dismiss = rememberSwipeToDismissBoxState()
+                    LaunchedEffect(dismiss.currentValue) {
+                        if (dismiss.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                            linkPendingState = dismiss
+                            askDeleteLinkId = l.id
+                        }
+                    }
+                    SwipeItemRow(
+                        state = dismiss,
+                        leading = { Icon(Icons.Outlined.Link, null) },
+                        text = {
+                            Text(
+                                l.url,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        onClick = {
+                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(l.url))) }
+                            catch (_: Exception) {
+                                Toast.makeText(context, "No se puede abrir el enlace", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
                 }
             }
         }
     }
+
+    // ===== Diálogos de confirmación (reseteando swipe SIEMPRE) =====
+
+    ConfirmDeleteDialog(
+        open = askClearInfo,
+        title = "Eliminar información",
+        message = "¿Seguro que quieres eliminar el texto de información?",
+        onConfirm = {
+            viewModel.clearInfo(material.id)
+            onSnack("Información eliminada")
+            reset(infoPendingState)
+            askClearInfo = false
+            infoPendingState = null
+        },
+        onDismiss = {
+            reset(infoPendingState)
+            askClearInfo = false
+            infoPendingState = null
+        }
+    )
+
+    ConfirmDeleteDialog(
+        open = askDeleteDocId != null,
+        title = "Eliminar documento",
+        message = "¿Seguro que quieres eliminar este documento?",
+        onConfirm = {
+            askDeleteDocId?.let { viewModel.deleteDocById(it); onSnack("Documento eliminado") }
+            reset(docPendingState)
+            askDeleteDocId = null
+            docPendingState = null
+        },
+        onDismiss = {
+            reset(docPendingState)
+            askDeleteDocId = null
+            docPendingState = null
+        }
+    )
+
+    ConfirmDeleteDialog(
+        open = askDeleteImgId != null,
+        title = "Eliminar imagen",
+        message = "¿Seguro que quieres eliminar esta imagen?",
+        onConfirm = {
+            askDeleteImgId?.let { viewModel.deleteImgById(it); onSnack("Imagen eliminada") }
+            reset(imgPendingState)
+            askDeleteImgId = null
+            imgPendingState = null
+        },
+        onDismiss = {
+            reset(imgPendingState)
+            askDeleteImgId = null
+            imgPendingState = null
+        }
+    )
+
+    ConfirmDeleteDialog(
+        open = askDeleteLinkId != null,
+        title = "Eliminar enlace",
+        message = "¿Seguro que quieres eliminar este enlace?",
+        onConfirm = {
+            askDeleteLinkId?.let { viewModel.deleteLinkById(it); onSnack("Enlace eliminado") }
+            reset(linkPendingState)
+            askDeleteLinkId = null
+            linkPendingState = null
+        },
+        onDismiss = {
+            reset(linkPendingState)
+            askDeleteLinkId = null
+            linkPendingState = null
+        }
+    )
 }
 
+/* ===================== Helper abrirArchivo ===================== */
 
-
-@Composable
-fun SelectorArchivo(onArchivoSeleccionado: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let(onArchivoSeleccionado)
-    }
-    OutlinedButton(onClick = { launcher.launch(arrayOf("*/*")) }) {
-        Icon(Icons.Outlined.AttachFile, null); Spacer(Modifier.width(8.dp)); Text("Documento")
-    }
-}
-
-@Composable
-fun SelectorImagen(onImagenSeleccionada: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let(onImagenSeleccionada)
-    }
-    OutlinedButton(onClick = { launcher.launch("image/*") }) {
-        Icon(Icons.Outlined.Image, null); Spacer(Modifier.width(8.dp)); Text("Imagen")
-    }
-}
-
-
-fun abrirArchivo(context: Context, uri: Uri, tipo: String) {
+private fun abrirArchivo(context: Context, uri: Uri, tipo: String) {
     val intent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(uri, tipo)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     try {
         context.startActivity(intent)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Toast.makeText(context, "No se pudo abrir el archivo", Toast.LENGTH_SHORT).show()
     }
-}
-
-
-fun obtenerNombreArchivo(context: Context, uri: Uri): String {
-    var nombre: String? = null
-    val cursor = context.contentResolver.query(uri, null, null, null, null)
-    cursor?.use {
-        if (it.moveToFirst()) {
-            val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (index != -1) {
-                nombre = it.getString(index)
-            }
-        }
-    }
-    return nombre ?: uri.lastPathSegment ?: "Archivo desconocido"
 }
